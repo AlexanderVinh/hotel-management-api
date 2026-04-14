@@ -1,0 +1,30 @@
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DatabaseModule } from './database.module';
+import { UsersModule } from './features/users/Users.module';
+import { AuthModule } from './features/auth/auth.module';
+import { JwtAuthGuard } from './shared/guards/jwt-auth.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { RoomsModule } from './features/rooms/rooms.module';
+import { BookingsModule } from './features/bookings/booking.module';
+
+@Module({
+  imports: [
+    DatabaseModule,
+    UsersModule,
+    AuthModule,
+    RoomsModule,
+    BookingsModule,
+  ],
+  controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    AppService],
+})
+export class AppModule { }
