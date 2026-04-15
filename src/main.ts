@@ -5,7 +5,8 @@ import { PostInterceptor } from './shared/interceptors/post.interceptors';
 import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
 import { AllExceptionsFilter } from './shared/filters/all-expection.filter';
 import cookieParser from 'cookie-parser';
-
+import { APP_GUARD } from '@nestjs/core';
+import { PermissionGuard } from './shared/guards/permission.guard';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());

@@ -1,33 +1,78 @@
-import { Controller, Post, Body, Req, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Query } from '@nestjs/common';
 import { BookingsService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ResponseApi } from '../../shared/dto/response.dto';
-
+import { Auth, ResourceMeta, ActionMeta, type TokenInfo } from 'src/shared/decorator/custom.decorator';
+import { QueryBookingDto } from './dto/query-booking.dto';
+import { BookingStatus } from 'src/schemas/booking.schema';
+import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
+import { API_ACTION } from 'src/shared/constant/constant'; // 👈 Import Enum
 @Controller('bookings')
+@ResourceMeta('bookings')
 export class BookingsController {
     constructor(private readonly bookingsService: BookingsService) { }
 
-    @Post()
-    async create(@Req() req: any, @Body() createBookingDto: CreateBookingDto) {
-        const userId = req.user.userId;
-        const data = await this.bookingsService.createBooking(userId, createBookingDto);
+    // ================= KHÁCH HÀNG (USER) ================= //
 
+    @Post()
+    @ActionMeta(API_ACTION.CREATE) // 👈 Hành động Tạo
+    async create(
+        @Auth() user: TokenInfo,
+        @Body() createBookingDto: CreateBookingDto
+    ) {
+        const data = await this.bookingsService.createBooking(user, createBookingDto);
         return ResponseApi.create(data, 'Đặt phòng thành công!');
     }
 
     @Get('my-bookings')
-    async getMyBookings(@Req() req: any) {
-        const userId = req.user.userId;
-        const data = await this.bookingsService.getMyBookings(userId);
-
+    @ActionMeta(API_ACTION.READ) // 👈 Hành động Đọc
+    async getMyBookings(@Auth() user: TokenInfo) {
+        const data = await this.bookingsService.getMyBookings(user);
         return ResponseApi.create(data, 'Lấy lịch sử đặt phòng thành công!');
     }
 
-    @Patch(':id/cancel')
-    async cancelBooking(@Req() req: any, @Param('id') bookingId: string) {
-        const userId = req.user.userId;
-        const data = await this.bookingsService.cancelBooking(bookingId, userId);
-
+    @Patch('cancel/:id')
+    @ActionMeta(API_ACTION.UPDATE) // 👈 Hành động Cập nhật (Hủy đơn)
+    async cancelBooking(
+        @Param('id') bookingId: string,
+        @Auth() user: TokenInfo
+    ) {
+        const data = await this.bookingsService.cancelBooking(bookingId, user);
         return ResponseApi.create(data, 'Hủy đặt phòng thành công!');
+    }
+
+    // ================= LỄ TÂN / ADMIN ================= //
+
+    @Get()
+    @ActionMeta(API_ACTION.MANAGE)
+    async getAllBookings(@Query() request: QueryBookingDto) {
+        const data = await this.bookingsService.getAllBookings(request);
+        return ResponseApi.create(data, 'Lấy danh sách toàn bộ đơn đặt phòng thành công!');
+    }
+
+    @Patch('confirm/:id')
+    @ActionMeta(API_ACTION.MANAGE)
+    async confirmBooking(
+        @Param('id') bookingId: string,
+        @Body() payload: UpdateBookingStatusDto,
+        @Auth() admin: TokenInfo
+    ) {
+        payload.status = BookingStatus.CONFIRMED;
+        const data = await this.bookingsService.updateBookingStatus(bookingId, payload, admin);
+        return ResponseApi.create(data, 'Đã xác nhận đơn đặt phòng!');
+    }
+
+    @Patch('check-in/:id')
+    @ActionMeta(API_ACTION.MANAGE)
+    async checkInBooking(@Param('id') bookingId: string, @Auth() admin: TokenInfo) {
+        const data = await this.bookingsService.handleCheckIn(bookingId, admin);
+        return ResponseApi.create(data, 'Check-in thành công. Đã giao phòng cho khách!');
+    }
+
+    @Patch('check-out/:id')
+    @ActionMeta(API_ACTION.MANAGE)
+    async checkOutBooking(@Param('id') bookingId: string, @Auth() admin: TokenInfo) {
+        const data = await this.bookingsService.handleCheckOut(bookingId, admin);
+        return ResponseApi.create(data, 'Check-out thành công. Hoàn tất giao dịch!');
     }
 }
