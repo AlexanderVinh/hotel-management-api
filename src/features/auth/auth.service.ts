@@ -1,5 +1,5 @@
 // src/features/auth/auth.service.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt'; // <-- Import thêm JwtService
 import { PasswordService } from '../../shared/service/password.service';
 import { TokenService } from '../../shared/service/token.service';
@@ -8,10 +8,12 @@ import { TokenType } from '../../schemas/token.schema';
 import { CreateTokenDto } from '../../shared/dto/token.dto';
 import { UsersService } from '../users/User.service';
 import { HOTEL_ACCESS_EXPIRED_IN, HOTEL_REFRESH_EXPIRED_IN, HOTEL_ACCESS_SECRET_KEY, HOTEL_REFRESH_SECRET_KEY } from 'src/config';
+import { UserRole } from 'src/shared/constant/constant';
 
 @Injectable()
 export class AuthService {
     constructor(
+        @Inject(forwardRef(() => UsersService)) // 👈 Thêm lệnh này
         private readonly usersService: UsersService,
         private readonly passwordService: PasswordService,
         private readonly tokenService: TokenService,
@@ -102,4 +104,59 @@ export class AuthService {
             throw new UnauthorizedException('Refresh Token không hợp lệ hoặc đã hết hạn!');
         }
     }
+
+    async checkPermission(userId: string, resource: string, actions: string[]): Promise<boolean> {
+        const user = await this.usersService.findById(userId);
+        if (!user || user.isDeleted) return false;
+
+        // ==========================================
+        // 1. QUYỀN TỐI CAO: ADMIN (Chủ khách sạn)
+        // ==========================================
+        if (user.role === UserRole.ADMIN) {
+            return true; // Qua trạm thu phí không cần dừng
+        }
+
+        // ==========================================
+        // 2. QUYỀN VẬN HÀNH: STAFF (Lễ tân, Nhân viên)
+        // ==========================================
+        if (user.role === UserRole.STAFF) {
+            // Staff được Đọc, Sửa, và Quản lý (MANAGE) đơn đặt phòng
+            if (resource === 'bookings' && actions.every(a => ['READ', 'UPDATE', 'MANAGE'].includes(a))) {
+                return true;
+            }
+
+            // Lễ tân được Xem và Sửa Phòng (Đổi trạng thái dọn dẹp), nhưng KHÔNG ĐƯỢC XÓA PHÒNG
+            if (resource === 'rooms' && actions.every(a => ['READ', 'UPDATE', 'CREATE'].includes(a))) {
+                return true;
+            }
+
+            return false; // Chặn các tài nguyên khác chưa khai báo
+        }
+
+        // ==========================================
+        // 3. QUYỀN CƠ BẢN: GUEST (Khách hàng vãng lai/Đã đăng ký)
+        // ==========================================
+        if (user.role === UserRole.GUEST) {
+            // Khách được: Xem phòng (READ)
+            if (resource === 'bookings' && actions.every(a => ['READ', 'CREATE', 'CANCEL'].includes(a))) {
+                return true;
+            }
+
+            // Khách được: Đặt phòng (CREATE), Xem lịch sử của mình (READ), Hủy phòng (UPDATE)
+            if (resource === 'bookings' && actions.every(a => ['READ', 'CREATE', 'UPDATE'].includes(a))) {
+                return true;
+            }
+
+            // Tuyệt đối không cho Guest đụng vào danh sách Users
+            if (resource === 'users') {
+                return false;
+            }
+
+            return false;
+        }
+
+        // Mặc định an toàn: Đóng cửa mọi trường hợp không khớp
+        return false;
+    }
 }
+

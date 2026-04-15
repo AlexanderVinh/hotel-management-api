@@ -1,6 +1,6 @@
 // src/features/users/dto/create-user.dto.ts
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
-import { UserRole } from '../../../schemas/user.schema';
+import { UserRole } from 'src/shared/constant/constant';
 import { LowerCase, Trim } from 'src/shared/decorator/transform.decorator';
 
 export class CreateUserDto {

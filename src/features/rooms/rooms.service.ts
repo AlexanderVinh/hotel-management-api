@@ -6,6 +6,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { IMPORT_ROOM_COLUMNS } from 'src/shared/constant/import';
 import * as ExcelJS from 'exceljs';
+import { QueryRoomDto } from './dto/query-room.dto';
 
 @Injectable()
 export class RoomsService {
@@ -74,11 +75,49 @@ export class RoomsService {
   }
 
   // ================= ĐỌC DANH SÁCH (CÓ PHÂN TRANG) ================= //
-  async findAll(page: number = 1, size: number = 10) {
-    const query = { isDeleted: false }; // 👈 Lọc các phòng chưa bị xóa
-    const totalElements = await this.roomModel.countDocuments(query);
-    const rooms = await this.roomModel.find(query).skip((page - 1) * size).limit(size).sort({ createdAt: -1 }).exec();
-    return { rooms, totalElements };
+  async findAll(request: QueryRoomDto) {
+    const page = request.page || 1;
+    const size = request.size || 10;
+    const skip = (page - 1) * size;
+
+    // 1. Build Query động
+    const query: any = { isDeleted: false }; // Luôn ẩn các phòng đã xóa mềm
+
+    if (request.roomNumber) {
+      // Tìm kiếm tương đối: Gõ "10" ra "101", "102"
+      query.roomNumber = new RegExp(request.roomNumber.trim(), 'i');
+    }
+
+    if (request.type) {
+      query.type = request.type;
+    }
+
+    if (request.status) {
+      query.status = request.status;
+    }
+
+    // 2. Tối ưu hiệu năng: Đếm tổng và Lấy dữ liệu cùng lúc
+    const [total, items] = await Promise.all([
+      this.roomModel.countDocuments(query).exec(),
+      this.roomModel
+        .find(query)
+        .skip(skip)
+        .limit(size)
+        .sort({ createdAt: -1 })
+        .lean() // Giảm tải bộ nhớ
+        .exec()
+    ]);
+
+    // 3. Trả về cấu trúc Phân trang đồng nhất với Bookings
+    return {
+      items,
+      meta: {
+        totalElements: total,
+        currentPage: page,
+        pageSize: size,
+        totalPages: Math.ceil(total / size),
+      }
+    };
   }
 
   async findByIds(ids: string[], session?: ClientSession) {
@@ -171,5 +210,23 @@ export class RoomsService {
       thatBai: errors.length,
       chiTietLoi: errors, // Trả luôn mảng lỗi để FE bóc ra hiển thị
     };
+  }
+
+
+  async updateMultipleRoomStatus(roomIds: string[], newStatus: string, session?: ClientSession) {
+    if (!roomIds || roomIds.length === 0) return;
+
+    // Dùng updateMany để tối ưu hiệu năng (Cập nhật 1 phát ăn ngay)
+    const query = this.roomModel.updateMany(
+      { _id: { $in: roomIds } }, // Tìm tất cả các phòng có id nằm trong mảng
+      { $set: { status: newStatus } } // Đổi trạng thái mới
+    );
+
+    // Hỗ trợ Database Transaction nếu có truyền session sang
+    if (session) {
+      query.session(session);
+    }
+
+    await query.exec();
   }
 }
