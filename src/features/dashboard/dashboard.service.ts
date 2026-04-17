@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { BookingStatus } from '../../schemas/booking.schema';
-import { RoomStatus } from '../../schemas/room.schema';
+import { BookingStatus } from 'src/shared/constant/constant';
+import { RoomStatus } from 'src/shared/constant/constant';
 import { RoomsService } from '../rooms/rooms.service';
 import { BookingsService } from '../bookings/booking.service';
 

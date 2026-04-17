@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt'; // <-- Import thêm JwtService
 import { PasswordService } from '../../shared/service/password.service';
 import { TokenService } from '../../shared/service/token.service';
 import { LoginDto } from './dto/login.dto';
-import { TokenType } from '../../schemas/token.schema';
+import { TokenType } from 'src/shared/constant/constant';
 import { CreateTokenDto } from '../../shared/dto/token.dto';
 import { UsersService } from '../users/User.service';
 import { HOTEL_ACCESS_EXPIRED_IN, HOTEL_REFRESH_EXPIRED_IN, HOTEL_ACCESS_SECRET_KEY, HOTEL_REFRESH_SECRET_KEY } from 'src/config';

@@ -8,3 +8,9 @@ export const IMPORT_ROOM_COLUMNS = [
     { column: 5, key: 'status', value: 'Trạng thái', type: 'string' }, // AVAILABLE, MAINTENANCE...
     { column: 6, key: 'description', value: 'Mô tả', type: 'string' },
 ];
+
+export const IMPORT_SERVICE_COLUMNS = [
+    { column: 1, key: 'name', value: 'Tên dịch vụ', type: 'string' },
+    { column: 2, key: 'price', value: 'Giá (VNĐ)', type: 'number' },
+    { column: 3, key: 'description', value: 'Mô tả', type: 'string' },
+];

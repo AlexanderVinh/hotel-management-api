@@ -1,28 +1,16 @@
-import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
+import { Pagination } from '../../../shared/dto/pagination.dto';
 
-export class QueryRoomDto {
+export class QueryRoomDto extends Pagination {
     @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    page?: number = 1;
-
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    size?: number = 10;
+    @IsString()
+    roomNumber?: string;
 
     @IsOptional()
     @IsString()
-    roomNumber?: string; // Lễ tân gõ số phòng để tìm nhanh
+    type?: string;
 
     @IsOptional()
     @IsString()
-    type?: string; // Lọc theo loại phòng (SINGLE, DOUBLE, VIP...)
-
-    @IsOptional()
-    @IsString()
-    status?: string; // Lọc theo trạng thái (AVAILABLE, OCCUPIED, MAINTENANCE...)
+    status?: string;
 }

@@ -1,24 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { BookingStatus, PaymentStatus } from 'src/shared/constant/constant';
 
 export type BookingDocument = Booking & Document;
-
-// 1. Định nghĩa các trạng thái của đơn đặt phòng
-export enum BookingStatus {
-    PENDING = 'PENDING',       // Chờ xử lý/Chờ đặt cọc
-    CONFIRMED = 'CONFIRMED',   // Đã xác nhận/Đã đặt cọc
-    CHECKED_IN = 'CHECKED_IN', // Khách đã nhận phòng
-    CHECKED_OUT = 'CHECKED_OUT', // Khách đã trả phòng (Hoàn tất)
-    CANCELLED = 'CANCELLED',   // Đã hủy
-}
-
-// 2. Định nghĩa trạng thái thanh toán
-export enum PaymentStatus {
-    UNPAID = 'UNPAID',     // Chưa thanh toán
-    PARTIAL = 'PARTIAL',   // Thanh toán một phần (Đặt cọc)
-    PAID = 'PAID',         // Đã thanh toán đủ
-    REFUNDED = 'REFUNDED', // Đã hoàn tiền (Trường hợp hủy phòng)
-}
 
 @Schema({
     timestamps: true,
@@ -44,8 +28,25 @@ export class Booking {
     @Prop({ required: true })
     checkOutDate: Date;
 
+    @Prop([
+        {
+            serviceId: { type: Types.ObjectId, ref: 'Service', required: true },
+            name: { type: String, required: true }, // Lưu lại tên lúc gọi
+            price: { type: Number, required: true }, // Lưu lại giá lúc gọi
+            quantity: { type: Number, required: true, min: 1 },
+            addedAt: { type: Date, default: Date.now } // Thời điểm gọi đồ
+        }
+    ])
+    usedServices: {
+        serviceId: Types.ObjectId;
+        name: string;
+        price: number;
+        quantity: number;
+        addedAt: Date;
+    }[];
+
     @Prop({ required: true, min: 0 })
-    totalAmount: number; // Tổng tiền cuối cùng
+    totalPrice: number; // Tổng tiền cuối cùng
 
     @Prop({ type: String, enum: BookingStatus, default: BookingStatus.PENDING })
     status: BookingStatus;

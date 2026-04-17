@@ -1,21 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { RoomStatus, RoomType } from 'src/shared/constant/constant';
 
 export type RoomDocument = Room & Document;
-
-// 1. Định nghĩa các Enum chuẩn để ép kiểu dữ liệu chặt chẽ (Không cho phép nhập lung tung)
-export enum RoomType {
-    SINGLE = 'SINGLE', // Phòng đơn
-    DOUBLE = 'DOUBLE', // Phòng đôi
-    SUITE = 'SUITE',   // Phòng cao cấp
-    DELUXE = 'DELUXE', // Phòng siêu sang
-}
-
-export enum RoomStatus {
-    AVAILABLE = 'AVAILABLE',     // Sẵn sàng đón khách
-    OCCUPIED = 'OCCUPIED',       // Đang có khách ở
-    MAINTENANCE = 'MAINTENANCE', // Đang bảo trì / dọn dẹp
-}
 
 @Schema({
     timestamps: true, // Tự động sinh createdAt và updatedAt

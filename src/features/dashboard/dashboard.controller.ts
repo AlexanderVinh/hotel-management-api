@@ -5,7 +5,7 @@ import { ActionMeta, ResourceMeta } from '../../shared/decorator/custom.decorato
 import { API_ACTION } from '../../shared/constant/constant';
 
 @Controller('dashboard')
-@ResourceMeta('dashboard') // Định danh tài nguyên mới
+@ResourceMeta('dashboard')
 export class DashboardController {
     constructor(private readonly dashboardService: DashboardService) { }
 

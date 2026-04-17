@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseIntercepto
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { PublicMeta, ResourceMeta, ActionMeta } from 'src/shared/decorator/custom.decorator';
+import { PublicMeta, ResourceMeta, ActionMeta, type TokenInfo, Auth } from 'src/shared/decorator/custom.decorator';
 import { ResponseApi } from '../../shared/dto/response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import 'multer';
@@ -10,6 +10,7 @@ import { join } from 'path';
 import type { Response as ExpressResponse } from 'express';
 import { QueryRoomDto } from './dto/query-room.dto';
 import { API_ACTION } from 'src/shared/constant/constant';
+import { BulkMarkAvailableDto } from './dto/bulk-mark-available.dto';
 
 @Controller('rooms')
 @ResourceMeta('rooms')
@@ -45,9 +46,25 @@ export class RoomsController {
   @UseInterceptors(FileInterceptor('file'))
   async importExcel(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('Vui lòng đính kèm file Excel!');
-    const report = await this.roomsService.importExcel(file.buffer);
-    const message = `Import hoàn tất: ${report.thanhCong} thành công, ${report.thatBai} thất bại.`;
-    return ResponseApi.create(report, message);
+
+    const data = await this.roomsService.importExcel(file.buffer);
+
+    return ResponseApi.create(
+      data,
+    );
+  }
+
+  @Post('bulk-available')
+  @ActionMeta(API_ACTION.UPDATE)
+  async bulkMarkAvailable(
+    @Body() payload: BulkMarkAvailableDto,
+    @Auth() user: TokenInfo) {
+    const data = await this.roomsService.bulkMarkAvailable(payload.roomIds, user);
+
+    return ResponseApi.create(
+      data,
+      `Đã cập nhật trạng thái sẵn sàng cho ${data.modifiedCount} phòng.`
+    );
   }
 
   // ================= API ĐƠN LẺ ================= //
@@ -100,5 +117,14 @@ export class RoomsController {
     return ResponseApi.create(data, 'Xóa phòng thành công!');
   }
 
+
+  @Patch(':id/make-available')
+  @ActionMeta(API_ACTION.UPDATE)
+  async makeAvailable(
+    @Param('id') id: string,
+    @Auth() user: TokenInfo) {
+    const data = await this.roomsService.markRoomAsAvailable(id, user);
+    return ResponseApi.create(data, 'Cập nhật trạng thái phòng thành công');
+  }
 
 }

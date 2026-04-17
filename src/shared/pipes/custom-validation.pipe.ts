@@ -86,6 +86,10 @@ export class CustomValidationPipe extends ValidationPipe {
     constructor(options?: ValidationPipeOptions) {
         super({
             whitelist: true,
+            transform: true,
+            transformOptions: {
+                enableImplicitConversion: true,
+            },
             // forbidNonWhitelisted: false,
             exceptionFactory: (errors) => {
                 const formatted = formatValidationErrors(errors);

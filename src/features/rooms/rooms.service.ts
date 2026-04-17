@@ -7,6 +7,9 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { IMPORT_ROOM_COLUMNS } from 'src/shared/constant/import';
 import * as ExcelJS from 'exceljs';
 import { QueryRoomDto } from './dto/query-room.dto';
+import { PaginatedResponse } from 'src/shared/dto/response.dto';
+import { TokenInfo } from 'src/shared/decorator/custom.decorator';
+import { RoomStatus as ROOM_STATUS } from 'src/shared/constant/constant';
 
 @Injectable()
 export class RoomsService {
@@ -76,8 +79,7 @@ export class RoomsService {
 
   // ================= ĐỌC DANH SÁCH (CÓ PHÂN TRANG) ================= //
   async findAll(request: QueryRoomDto) {
-    const page = request.page || 1;
-    const size = request.size || 10;
+    const { page, size } = request;
     const skip = (page - 1) * size;
 
     // 1. Build Query động
@@ -109,15 +111,7 @@ export class RoomsService {
     ]);
 
     // 3. Trả về cấu trúc Phân trang đồng nhất với Bookings
-    return {
-      items,
-      meta: {
-        totalElements: total,
-        currentPage: page,
-        pageSize: size,
-        totalPages: Math.ceil(total / size),
-      }
-    };
+    return PaginatedResponse.create(items, total, page, size);
   }
 
   async findByIds(ids: string[], session?: ClientSession) {
@@ -140,11 +134,11 @@ export class RoomsService {
     const worksheet = workbook.getWorksheet(1);
     if (!worksheet) throw new BadRequestException('File Excel không hợp lệ hoặc trống!');
 
-    const roomsToCreate: any[] = [];
-    const errors: any[] = []; // Cái giỏ hứng lỗi
-    const roomNumbersInFile = new Set<string>(); // Bộ nhớ tạm để nhớ các phòng đã đọc trong file
+    const rawItems: any[] = [];
+    const errors: any[] = [];
+    const roomNumbersInFile = new Set<string>();
 
-    // 1. Kiểm tra Tiêu đề (Header) - Phần này vẫn phải nghiêm ngặt
+    // 1. Kiểm tra Tiêu đề (Header)
     const headerRow = worksheet.getRow(1).values as any[];
     for (const col of IMPORT_ROOM_COLUMNS) {
       const headerValue = headerRow[col.column] ? headerRow[col.column].toString().trim() : '';
@@ -153,35 +147,19 @@ export class RoomsService {
       }
     }
 
-    // 2. Quét qua từng dòng dữ liệu (Chế độ Bao dung)
+    // 2. Parse dữ liệu thô và check trùng lặp nội bộ
     const totalRows = worksheet.rowCount;
     for (let i = 2; i <= totalRows; i++) {
       const row = worksheet.getRow(i);
       const roomNumber = row.getCell(1).value?.toString().trim();
 
-      if (!roomNumber) continue;
+      if (!roomNumber) continue; // Bỏ qua dòng trống
 
-      // Chốt chặn A: Kiểm tra trùng lặp NGAY TRONG file Excel
-      if (roomNumbersInFile.has(roomNumber)) {
-        errors.push({ dong: i, phong: roomNumber, loi: 'Số phòng bị trùng lặp bên trong file Excel' });
-        continue;
-      }
-      roomNumbersInFile.add(roomNumber);
+      const itemMessages: string[] = [];
+      const upperRoomNumber = roomNumber.toUpperCase(); // Thường số phòng hay viết hoa (VD: P101)
 
-      const isExist = await this.roomModel.findOne({ roomNumber });
-
-      if (isExist) {
-        // Trả lời cho Frontend biết chính xác phòng này đang ở trạng thái nào
-        if (isExist.isDeleted) {
-          errors.push({ dong: i, phong: roomNumber, loi: 'Phòng này đã từng tồn tại và đang nằm trong thùng rác (đã xóa mềm)' });
-        } else {
-          errors.push({ dong: i, phong: roomNumber, loi: 'Số phòng đã tồn tại trong hệ thống' });
-        }
-        continue; // Bỏ qua dòng này, đi tiếp dòng sau
-      }
-
-      // Nếu qua được các chốt chặn -> Ánh xạ dữ liệu
-      const roomItem: any = {};
+      // Ánh xạ dữ liệu
+      const roomItem: any = { _originalIndex: i };
       for (const col of IMPORT_ROOM_COLUMNS) {
         const cellValue = row.getCell(col.column).value;
         if (cellValue !== null && cellValue !== undefined) {
@@ -193,22 +171,70 @@ export class RoomsService {
         }
       }
 
-      roomsToCreate.push(roomItem);
+      // Chốt chặn A: Trùng lặp NGAY TRONG file Excel
+      if (roomNumbersInFile.has(upperRoomNumber)) {
+        itemMessages.push('Số phòng bị trùng lặp bên trong file Excel');
+      } else {
+        roomNumbersInFile.add(upperRoomNumber);
+      }
+
+      if (itemMessages.length > 0) {
+        errors.push({ index: i, name: roomNumber, messages: itemMessages });
+      } else {
+        rawItems.push(roomItem);
+      }
     }
 
-    // 3. Tiến hành lưu vào Database những phòng hợp lệ
-    let savedCount = 0;
-    if (roomsToCreate.length > 0) {
-      // Dùng lệnh gốc của Mongoose, bỏ qua validation thừa thãi của createMany
-      const savedData = await this.roomModel.insertMany(roomsToCreate);
-      savedCount = savedData.length;
+    if (rawItems.length === 0) {
+      return { rooms: [], errors, totalSuccess: 0, totalError: errors.length };
     }
 
-    // 4. Trả về Báo cáo chi tiết cho Frontend
+    // 3. TỐI ƯU HIỆU NĂNG: Truy vấn Database 1 lần duy nhất bằng $in
+    const roomNumbersToCheck = rawItems.map(item => item.roomNumber);
+
+    // Tìm kiếm không phân biệt hoa thường
+    const regexRoomNumbers = roomNumbersToCheck.map(n => new RegExp(`^${n}$`, 'i'));
+
+    const existRooms = await this.roomModel.find({
+      roomNumber: { $in: regexRoomNumbers }
+    }).select('roomNumber isDeleted').lean();
+
+    // Ép dữ liệu DB vào Map để tra cứu
+    const existDBMap = new Map();
+    existRooms.forEach(r => existDBMap.set(r.roomNumber.toUpperCase(), r));
+
+    // 4. Lọc ra những Item hợp lệ cuối cùng để lưu
+    const itemsToSave = rawItems.filter(item => {
+      const existRoom = existDBMap.get(item.roomNumber.toUpperCase());
+
+      if (existRoom) {
+        const msg = existRoom.isDeleted
+          ? 'Phòng này đã từng tồn tại và đang nằm trong thùng rác (đã xóa mềm)'
+          : 'Số phòng đã tồn tại trong hệ thống';
+
+        errors.push({
+          index: item._originalIndex,
+          name: item.roomNumber,
+          messages: [msg]
+        });
+        return false;
+      }
+      return true;
+    });
+
+    // 5. Tiến hành lưu vào Database
+    let savedRooms: any[] = [];
+    if (itemsToSave.length > 0) {
+      const payloadToInsert = itemsToSave.map(({ _originalIndex, ...rest }) => rest);
+      savedRooms = await this.roomModel.insertMany(payloadToInsert);
+    }
+
+    // 6. Trả về cấu trúc Object đồng nhất
     return {
-      thanhCong: savedCount,
-      thatBai: errors.length,
-      chiTietLoi: errors, // Trả luôn mảng lỗi để FE bóc ra hiển thị
+      rooms: savedRooms, // Đổi từ services thành rooms cho đúng ngữ cảnh
+      errors: errors.sort((a, b) => a.index - b.index),
+      totalSuccess: savedRooms.length,
+      totalError: errors.length
     };
   }
 
@@ -236,5 +262,47 @@ export class RoomsService {
       status,
       isDeleted: { $ne: true }
     });
+  }
+
+  async markRoomAsAvailable(roomId: string, admin: TokenInfo) {
+    const room = await this.roomModel.findById(roomId);
+    if (!room) throw new NotFoundException('Không tìm thấy phòng!');
+
+    // Kiểm tra trạng thái hợp lệ để dọn dẹp
+    const validStatuses = [ROOM_STATUS.MAINTENANCE, ROOM_STATUS.OCCUPIED];
+    if (!validStatuses.includes(room.status as any)) {
+      throw new BadRequestException(`Phòng đang ở trạng thái ${room.status}, không cần dọn dẹp!`);
+    }
+
+    room.status = ROOM_STATUS.AVAILABLE;
+    room.updatedBy = admin.userId;
+    await room.save();
+
+    return {
+      roomId: room._id,
+      status: room.status,
+      message: 'Phòng đã sẵn sàng đón khách mới!'
+    };
+  }
+
+  async bulkMarkAvailable(roomIds: string[], admin: TokenInfo) {
+    const result = await this.roomModel.updateMany(
+      {
+        _id: { $in: roomIds },
+        status: ROOM_STATUS.MAINTENANCE
+      },
+      {
+        $set: {
+          status: ROOM_STATUS.AVAILABLE,
+          updatedBy: admin.userId
+        }
+      }
+    );
+
+    return {
+      requestedCount: roomIds.length,
+      modifiedCount: result.modifiedCount, // Số phòng thực tế đã dọn xong
+      message: `Đã giải phóng ${result.modifiedCount}/${roomIds.length} phòng.`
+    };
   }
 }
