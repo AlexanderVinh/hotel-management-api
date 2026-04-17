@@ -9,7 +9,7 @@ export enum API_ACTION {
     CREATE = 'CREATE',
     UPDATE = 'UPDATE',
     DELETE = 'DELETE',
-    CANCEL = 'CANCEL', // 👈 Thêm cho Khách
+    CANCEL = 'CANCEL',
     MANAGE = 'MANAGE',
 }
 
