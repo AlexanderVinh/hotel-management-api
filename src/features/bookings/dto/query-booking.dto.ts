@@ -1,24 +1,13 @@
-import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+// src/features/bookings/dto/query-booking.dto.ts
+import { IsOptional, IsString } from 'class-validator';
+import { Pagination } from 'src/shared/dto/pagination.dto'; // Đảm bảo đúng đường dẫn
 
-export class QueryBookingDto {
+export class QueryBookingDto extends Pagination {
     @IsOptional()
-    @Type(() => Number) // Tự động ép kiểu URL string sang Number
-    @IsNumber()
-    @Min(1)
-    page?: number = 1;
-
-    @IsOptional()
-    @Type(() => Number)
-    @IsNumber()
-    @Min(1)
-    size?: number = 10;
+    @IsString()
+    status?: string; // 👈 Khai báo để Service không báo đỏ khi gọi request.status
 
     @IsOptional()
     @IsString()
-    status?: string;
-
-    @IsOptional()
-    @IsString()
-    bookingCode?: string; // Giúp Lễ tân gõ mã đơn vào ô tìm kiếm
+    bookingCode?: string; // 👈 Khai báo để Service không báo đỏ khi gọi request.bookingCode
 }

@@ -18,3 +18,39 @@ export enum UserRole {
     STAFF = 'staff',
     GUEST = 'guest',
 }
+
+export enum TokenType {
+    ACCESS_TOKEN = 'access_token',
+    REFRESH_TOKEN = 'refresh_token',
+}
+
+export enum RoomType {
+    SINGLE = 'SINGLE', // Phòng đơn
+    DOUBLE = 'DOUBLE', // Phòng đôi
+    SUITE = 'SUITE',   // Phòng cao cấp
+    DELUXE = 'DELUXE', // Phòng siêu sang
+}
+
+export enum RoomStatus {
+    AVAILABLE = 'AVAILABLE',     // Sẵn sàng đón khách
+    OCCUPIED = 'OCCUPIED',       // Đang có khách ở
+    MAINTENANCE = 'MAINTENANCE', // Đang bảo trì / dọn dẹp
+}
+
+
+// 1. Định nghĩa các trạng thái của đơn đặt phòng
+export enum BookingStatus {
+    PENDING = 'PENDING',       // Chờ xử lý/Chờ đặt cọc
+    CONFIRMED = 'CONFIRMED',   // Đã xác nhận/Đã đặt cọc
+    CHECKED_IN = 'CHECKED_IN', // Khách đã nhận phòng
+    CHECKED_OUT = 'CHECKED_OUT', // Khách đã trả phòng (Hoàn tất)
+    CANCELLED = 'CANCELLED',   // Đã hủy
+}
+
+// 2. Định nghĩa trạng thái thanh toán
+export enum PaymentStatus {
+    UNPAID = 'UNPAID',     // Chưa thanh toán
+    PARTIAL = 'PARTIAL',   // Thanh toán một phần (Đặt cọc)
+    PAID = 'PAID',         // Đã thanh toán đủ
+    REFUNDED = 'REFUNDED', // Đã hoàn tiền (Trường hợp hủy phòng)
+}

@@ -4,9 +4,10 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { ResponseApi } from '../../shared/dto/response.dto';
 import { Auth, ResourceMeta, ActionMeta, type TokenInfo } from 'src/shared/decorator/custom.decorator';
 import { QueryBookingDto } from './dto/query-booking.dto';
-import { BookingStatus } from 'src/schemas/booking.schema';
+import { BookingStatus } from 'src/shared/constant/constant';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { API_ACTION } from 'src/shared/constant/constant'; // 👈 Import Enum
+import { AddExtraServicesDto } from './dto/add-extra-service.dto';
 @Controller('bookings')
 @ResourceMeta('bookings')
 export class BookingsController {
@@ -74,5 +75,16 @@ export class BookingsController {
     async checkOutBooking(@Param('id') bookingId: string, @Auth() admin: TokenInfo) {
         const data = await this.bookingsService.handleCheckOut(bookingId, admin);
         return ResponseApi.create(data, 'Check-out thành công. Hoàn tất giao dịch!');
+    }
+
+
+    @Post(':id/extra-services')
+    @ActionMeta(API_ACTION.UPDATE)
+    async addServices(
+        @Param('id') bookingId: string,
+        @Body() payload: AddExtraServicesDto // Nhận mảng items
+    ) {
+        const data = await this.bookingsService.addExtraServices(bookingId, payload);
+        return ResponseApi.create(data, 'Đã cập nhật dịch vụ thành công!');
     }
 }

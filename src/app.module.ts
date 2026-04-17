@@ -12,6 +12,7 @@ import { PermissionGuard } from './shared/guards/permission.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DashboardModule } from './features/dashboard/dashboard..module';
+import { ServicesModule } from './features/services/service.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DashboardModule } from './features/dashboard/dashboard..module';
     RoomsModule,
     BookingsModule,
     DashboardModule,
+    ServicesModule,
   ],
   controllers: [AppController],
   providers: [

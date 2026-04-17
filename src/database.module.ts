@@ -8,6 +8,7 @@ import { User, UserSchema } from './schemas/user.schema';
 import { Token, TokenSchema } from './schemas/token.schema';
 import { RoomSchema } from './schemas/room.schema';
 import { BookingSchema } from './schemas/booking.schema';
+import { ServiceSchema } from './schemas/service.schema';
 
 @Global()
 @Module({
@@ -17,7 +18,8 @@ import { BookingSchema } from './schemas/booking.schema';
             { name: User.name, schema: UserSchema },
             { name: 'Token', schema: TokenSchema },
             { name: 'Room', schema: RoomSchema },
-            { name: 'Booking', schema: BookingSchema }
+            { name: 'Booking', schema: BookingSchema },
+            { name: 'Service', schema: ServiceSchema }
         ]),
     ],
     exports: [MongooseModule],

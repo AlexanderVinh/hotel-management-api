@@ -1,6 +1,6 @@
 // src/features/rooms/dto/create-room.dto.ts
 import { IsString, IsNumber, IsEnum, IsArray, IsOptional, Min } from 'class-validator';
-import { RoomType, RoomStatus } from 'src/schemas/room.schema';
+import { RoomStatus, RoomType } from 'src/shared/constant/constant';
 
 export class CreateRoomDto {
     @IsString()

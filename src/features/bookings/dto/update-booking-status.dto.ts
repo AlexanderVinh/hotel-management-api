@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { BookingStatus, PaymentStatus } from 'src/schemas/booking.schema';
+import { BookingStatus, PaymentStatus } from 'src/shared/constant/constant';
 
 export class UpdateBookingStatusDto {
     @IsEnum(BookingStatus, { message: 'Trạng thái booking không hợp lệ' })

@@ -1,19 +1,24 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
-import { BookingDocument, BookingStatus, PaymentStatus } from '../../schemas/booking.schema';
-import { RoomDocument } from '../../schemas/room.schema';
+import { BookingStatus, PaymentStatus } from 'src/shared/constant/constant';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RoomsService } from '../rooms/rooms.service';
 import { QueryBookingDto } from './dto/query-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { TokenInfo } from 'src/shared/decorator/custom.decorator';
+import { PaginatedResponse } from 'src/shared/dto/response.dto';
+import { ServicesService } from '../services/service.service';
+import { AddExtraServicesDto } from './dto/add-extra-service.dto';
+import { BookingDocument } from 'src/schemas/booking.schema';
 
 @Injectable()
 export class BookingsService {
     constructor(
         @InjectModel('Booking') private bookingModel: Model<BookingDocument>,
         private readonly roomsService: RoomsService,
+        @Inject(forwardRef(() => ServicesService))
+        private readonly servicesService: ServicesService,
         @InjectConnection() private connection: Connection, // Dùng để mở Transaction
     ) { }
 
@@ -58,9 +63,9 @@ export class BookingsService {
                 throw new BadRequestException('Có phòng không tồn tại hoặc đã bị khóa!');
             }
 
-            let totalAmount = 0;
+            let totalPrice = 0;
             const roomSnapshots = rooms.map(room => {
-                totalAmount += (room.pricePerNight * nights);
+                totalPrice += (room.pricePerNight * nights);
                 return {
                     roomId: room._id,
                     priceAtBooking: room.pricePerNight
@@ -78,7 +83,7 @@ export class BookingsService {
                 rooms: roomSnapshots,
                 checkInDate: checkIn,
                 checkOutDate: checkOut,
-                totalAmount,
+                totalPrice,
                 note,
             });
 
@@ -124,8 +129,7 @@ export class BookingsService {
     }
 
     async getAllBookings(request: QueryBookingDto) {
-        const page = request.page || 1;
-        const size = request.size || 10;
+        const { page, size } = request;
         const skip = (page - 1) * size;
 
         // KỸ THUẬT 1: Xây dựng Query Builder linh hoạt
@@ -155,15 +159,7 @@ export class BookingsService {
         ]);
 
         // KỸ THUẬT 3: Cấu trúc trả về chuẩn Phân trang
-        return {
-            items,
-            meta: {
-                totalElements: total,
-                currentPage: page,
-                pageSize: size,
-                totalPages: Math.ceil(total / size),
-            }
-        };
+        return PaginatedResponse.create(items, total, page, size);
     }
 
     // 2. Hàm dùng chung để cập nhật các trạng thái cơ bản (Confirm)
@@ -284,5 +280,50 @@ export class BookingsService {
             },
             { $sort: { _id: 1 } }
         ]);
+    }
+
+    async addExtraServices(bookingId: string, payload: AddExtraServicesDto) {
+        // 1. Tìm đơn đặt phòng (Nhớ dùng tên biến mới là totalPrice)
+        const booking = await this.bookingModel.findById(bookingId);
+        if (!booking) throw new NotFoundException('Đơn đặt phòng không tồn tại');
+
+        if (booking.status !== BookingStatus.CHECKED_IN) {
+            throw new BadRequestException('Chỉ có thể thêm dịch vụ khi khách đang ở (CHECKED_IN)');
+        }
+
+        // 2. Lấy danh sách ID từ payload (DTO đã bỏ chữ "Id" ở đuôi)
+        const serviceIds = payload.items.map(item => item.service);
+
+        // 3. Truy vấn Database 1 lần duy nhất
+        const services = await this.servicesService.findByIds(serviceIds);
+
+        // Kiểm tra xem có dịch vụ nào bị "ma" (không tồn tại) không
+        if (services.length !== new Set(serviceIds).size) {
+            throw new BadRequestException('Một hoặc nhiều dịch vụ bạn chọn không tồn tại hoặc đã bị ngừng cung cấp');
+        }
+
+        const serviceMap = new Map(services.map(s => [s._id.toString(), s]));
+
+        // 5. Duyệt mảng và cộng dồn
+        payload.items.forEach(item => {
+            const sInfo = serviceMap.get(item.service);
+
+            // Chốt chặn lỗi TS18048: Kiểm tra nếu sInfo không tồn tại thì bỏ qua (hoặc throw lỗi)
+            if (!sInfo) return;
+
+            // Sửa lỗi TS2561: Mapping đúng tên trường theo thông báo lỗi của Schema
+            booking.usedServices.push({
+                serviceId: sInfo._id as any, // 👈 Sửa 'service' thành 'serviceId'
+                name: sInfo.name,
+                price: sInfo.price,          // 👈 Sửa 'priceAtBooking' thành 'price' cho khớp Schema
+                quantity: item.quantity,
+                addedAt: new Date()
+            });
+
+            // Tính toán tổng tiền
+            booking.totalPrice += (sInfo.price * item.quantity);
+        });
+        // 6. Lưu kết quả
+        return await booking.save();
     }
 }
