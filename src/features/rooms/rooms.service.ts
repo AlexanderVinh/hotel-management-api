@@ -229,4 +229,12 @@ export class RoomsService {
 
     await query.exec();
   }
+
+
+  async countRoomsByStatus(status: string): Promise<number> {
+    return this.roomModel.countDocuments({
+      status,
+      isDeleted: { $ne: true }
+    });
+  }
 }

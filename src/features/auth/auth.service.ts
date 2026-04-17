@@ -130,6 +130,10 @@ export class AuthService {
                 return true;
             }
 
+            if (resource === 'dashboard' && actions.includes('READ')) {
+                return true;
+            }
+
             return false; // Chặn các tài nguyên khác chưa khai báo
         }
 
@@ -137,21 +141,23 @@ export class AuthService {
         // 3. QUYỀN CƠ BẢN: GUEST (Khách hàng vãng lai/Đã đăng ký)
         // ==========================================
         if (user.role === UserRole.GUEST) {
-            // Khách được: Xem phòng (READ)
+
+            // 1. Đối với Đơn đặt phòng (Bookings)
+            // Khách CHỈ được: Xem lịch sử của mình (READ), Đặt phòng (CREATE), và Hủy phòng (CANCEL)
             if (resource === 'bookings' && actions.every(a => ['READ', 'CREATE', 'CANCEL'].includes(a))) {
                 return true;
             }
 
-            // Khách được: Đặt phòng (CREATE), Xem lịch sử của mình (READ), Hủy phòng (UPDATE)
-            if (resource === 'bookings' && actions.every(a => ['READ', 'CREATE', 'UPDATE'].includes(a))) {
+            if (resource === 'rooms' && actions.every(a => ['READ'].includes(a))) {
                 return true;
             }
 
-            // Tuyệt đối không cho Guest đụng vào danh sách Users
-            if (resource === 'users') {
+            // Tuyệt đối không cho Guest đụng vào các tài nguyên hệ thống
+            if (resource === 'users' || resource === 'dashboard') {
                 return false;
             }
 
+            // Mặc định an toàn cho Guest
             return false;
         }
 

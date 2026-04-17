@@ -11,6 +11,7 @@ import { BookingsModule } from './features/bookings/booking.module';
 import { PermissionGuard } from './shared/guards/permission.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DashboardModule } from './features/dashboard/dashboard..module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AppService } from './app.service';
     AuthModule,
     RoomsModule,
     BookingsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
