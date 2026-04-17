@@ -32,7 +32,7 @@ export class BookingsController {
     }
 
     @Patch('cancel/:id')
-    @ActionMeta(API_ACTION.UPDATE) // 👈 Hành động Cập nhật (Hủy đơn)
+    @ActionMeta(API_ACTION.CANCEL) // 👈 Hành động Cập nhật (Hủy đơn)
     async cancelBooking(
         @Param('id') bookingId: string,
         @Auth() user: TokenInfo

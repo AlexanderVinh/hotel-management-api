@@ -248,4 +248,41 @@ export class BookingsService {
 
         return updatedBooking;
     }
+
+
+    // Đếm đơn đặt phòng theo trạng thái
+    async countBookingsByStatus(status: string): Promise<number> {
+        return this.bookingModel.countDocuments({ status });
+    }
+
+    // Đếm lượng khách Check-in trong khoảng thời gian
+    async countCheckInsBetween(startDate: Date, endDate: Date): Promise<number> {
+        return this.bookingModel.countDocuments({
+            checkInDate: { $gte: startDate, $lte: endDate },
+            status: { $in: ['CONFIRMED', 'CHECKED_IN'] } // Nhớ import enum nếu bạn đang dùng Enum
+        });
+    }
+
+    // Chuyển khối Aggregation tính doanh thu về đây
+    async getRevenueStats(days: number) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        return await this.bookingModel.aggregate([
+            {
+                $match: {
+                    status: 'CHECKED_OUT', // Chỉ tính tiền đơn đã hoàn tất
+                    updatedAt: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } },
+                    dailyRevenue: { $sum: '$totalPrice' },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+    }
 }
