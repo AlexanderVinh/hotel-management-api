@@ -1,11 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import * as mongoose from 'mongoose';
+import { TokenType } from 'src/shared/constant/constant';
 
-export enum TokenType {
-    ACCESS_TOKEN = 'access_token',
-    REFRESH_TOKEN = 'refresh_token',
-}
 
 @Schema({ timestamps: true })
 export class Token extends Document {
