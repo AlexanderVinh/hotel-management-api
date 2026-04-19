@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Hóa Đơn Thanh Toán</title>
+    <style>
+        {
+                {
+                    {
+                    style
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="invoice-header">
+        <div class="hotel-info">
+            <h1>Khách Sạn QuocTruongVinh</h1>
+            <p>123 Đường Tôn Đức Thắng, Quận 1, TP. HCM</p>
+            <p>Hotline: 0909 123 456 | Email: contact@hotelmini.com</p>
+        </div>
+        <div class="invoice-title">
+            <h2>Hóa Đơn</h2>
+            <p>Mã HĐ: {{ bookingCode }}</p>
+            <p style="font-weight: normal; color: #7f8c8d;">Ngày in: {{ printDate }}</p>
+        </div>
+    </div>
+
+    <div class="details-section">
+        <div class="details-col">
+            <p><strong>Khách hàng:</strong> {{ userFullName }}</p>
+            <p><strong>Email:</strong> {{ userEmail }}</p>
+            <p><strong>Ghi chú:</strong> {{ note }}</p>
+        </div>
+        <div class="details-col">
+            <p><strong>Ngày Check-in:</strong> {{ checkInDate }}</p>
+            <p><strong>Ngày Check-out:</strong> {{ checkOutDate }}</p>
+            <p><strong>Trạng thái:</strong> Đã thanh toán</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Hạng mục / Dịch vụ</th>
+                <th class="center">Số lượng</th>
+                <th class="right">Đơn giá</th>
+                <th class="right">Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each rooms}}
+            <tr>
+                <td>Phòng {{ this.roomNumber }} (Tiền phòng)</td>
+                <td class="center">{{ ../nights }} đêm</td>
+                <td class="right">{{ this.price }}</td>
+                <td class="right">{{ this.totalRoomPrice }}</td>
+            </tr>
+            {{/each}}
+
+            {{#each services}}
+            <tr>
+                <td>{{ this.name }}</td>
+                <td class="center">{{ this.quantity }}</td>
+                <td class="right">{{ this.price }}</td>
+                <td class="right">{{ this.totalServicePrice }}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+
+    <div class="total-section">
+        <div class="total-row grand-total">
+            <span>Tổng thanh toán:</span>
+            <span>{{ totalPrice }} VNĐ</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Cảm ơn Quý khách đã sử dụng dịch vụ của chúng tôi!</p>
+        <p>Hẹn gặp lại Quý khách trong những kỳ nghỉ tiếp theo.</p>
+        <div class="signature">
+            <p>Ban Quản Lý</p>
+            <p>(Đã ký tự động)</p>
+        </div>
+    </div>
+
+</body>
+
+</html>

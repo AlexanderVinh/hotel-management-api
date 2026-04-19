@@ -1,7 +1,7 @@
 import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
-import { BookingStatus, PaymentStatus } from 'src/shared/constant/constant';
+import { BookingStatus, PaymentStatus, RoomStatus } from 'src/shared/constant/constant';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { RoomsService } from '../rooms/rooms.service';
 import { QueryBookingDto } from './dto/query-booking.dto';
@@ -11,6 +11,10 @@ import { PaginatedResponse } from 'src/shared/dto/response.dto';
 import { ServicesService } from '../services/service.service';
 import { AddExtraServicesDto } from './dto/add-extra-service.dto';
 import { BookingDocument } from 'src/schemas/booking.schema';
+import { InvoiceService } from 'src/shared/invoice/invoice.service';
+import { MailService } from 'src/shared/mail/mail.service';
+import { type Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
 
 @Injectable()
 export class BookingsService {
@@ -20,6 +24,9 @@ export class BookingsService {
         @Inject(forwardRef(() => ServicesService))
         private readonly servicesService: ServicesService,
         @InjectConnection() private connection: Connection, // Dùng để mở Transaction
+        private readonly invoiceService: InvoiceService,
+        private readonly mailService: MailService,
+        @InjectQueue('invoice-queue') private invoiceQueue: Queue,
     ) { }
 
     async createBooking(user: TokenInfo, payload: CreateBookingDto) {
@@ -231,20 +238,28 @@ export class BookingsService {
                     updatedBy: admin.userId
                 }
             },
-            { new: true }
+            { returnDocument: 'after' }
         ).exec();
 
         if (!updatedBooking) {
-            throw new BadRequestException("Có lỗi xảy ra trong quá trình cập nhật trạng thái!");
+            throw new BadRequestException("Lỗi cập nhật trạng thái đơn đặt phòng!");
         }
 
-        // SIDE EFFECTS: Gọi RoomsService để dọn phòng (Đổi status phòng thành MAINTENANCE)
         const roomIds = updatedBooking.rooms.map(r => r.roomId.toString());
-        await this.roomsService.updateMultipleRoomStatus(roomIds, 'MAINTENANCE');
+        await this.roomsService.updateMultipleRoomStatus(roomIds, RoomStatus.MAINTENANCE);
 
+        await this.invoiceQueue.add(
+            'send-invoice-job',
+            { bookingId: updatedBooking._id.toString() },
+            {
+                attempts: 3,
+                backoff: 5000
+            }
+        );
+
+        // 5. Trả kết quả NGAY LẬP TỨC cho khách
         return updatedBooking;
     }
-
 
     // Đếm đơn đặt phòng theo trạng thái
     async countBookingsByStatus(status: string): Promise<number> {

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # 1. Database: MongoDB
+  hotel-db:
+    image: mongo:latest
+    container_name: hotel_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - hotel-network
+
+  # 2. Cache & Queue: Redis
+  hotel-redis:
+    image: redis:latest
+    container_name: hotel_redis_cache
+    ports:
+      - "6379:6379"
+    networks:
+      - hotel-network
+
+  # 3. Backend: NestJS App
+  hotel-app:
+    build: .
+    container_name: hotel_backend_api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - hotel-db
+      - hotel-redis
+    environment:
+      # LƯU Ý: Phải đổi localhost thành tên service trong mạng Docker
+      - DATABASE_URL=mongodb://hotel-db:27017/hotel_db
+      - REDIS_HOST=hotel-redis
+      - REDIS_PORT=6379
+    networks:
+      - hotel-network
+
+networks:
+  hotel-network:
+    driver: bridge
+
+volumes:
+  mongo_data:

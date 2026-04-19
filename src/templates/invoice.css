@@ -1,0 +1,147 @@
+/* src/templates/invoice.css */
+body {
+    font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
+    color: #333;
+    line-height: 1.6;
+    margin: 0;
+    padding: 40px;
+    font-size: 14px;
+}
+
+.invoice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+.hotel-info h1 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 26px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hotel-info p {
+    margin: 5px 0 0;
+    color: #7f8c8d;
+    font-size: 13px;
+}
+
+.invoice-title h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #e74c3c;
+    text-transform: uppercase;
+    text-align: right;
+}
+
+.invoice-title p {
+    margin: 5px 0 0;
+    font-weight: bold;
+    text-align: right;
+    font-size: 14px;
+}
+
+.details-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.details-col {
+    width: 48%;
+}
+
+.details-col p {
+    margin: 6px 0;
+}
+
+.details-col strong {
+    color: #2c3e50;
+    display: inline-block;
+    width: 130px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+
+th,
+td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+th {
+    background-color: #2c3e50;
+    color: #ffffff;
+    text-align: left;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+th.right,
+td.right {
+    text-align: right;
+}
+
+th.center,
+td.center {
+    text-align: center;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.total-section {
+    width: 40%;
+    float: right;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    box-sizing: border-box;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 15px;
+}
+
+.total-row.grand-total {
+    font-size: 20px;
+    font-weight: bold;
+    color: #e74c3c;
+    border-top: 2px solid #dee2e6;
+    padding-top: 15px;
+    margin-top: 10px;
+}
+
+.footer {
+    clear: both;
+    padding-top: 50px;
+    text-align: center;
+    color: #7f8c8d;
+    font-size: 13px;
+    margin-top: 50px;
+}
+
+.signature {
+    margin-top: 60px;
+    font-weight: bold;
+    color: #2c3e50;
+}

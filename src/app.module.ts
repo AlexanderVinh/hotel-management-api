@@ -13,9 +13,26 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DashboardModule } from './features/dashboard/dashboard..module';
 import { ServicesModule } from './features/services/service.module';
+import { MailModule } from './shared/mail/mail.module';
+import { InvoiceService } from './shared/invoice/invoice.service';
+import { BullModule } from '@nestjs/bull';
+import { RedisModule } from './shared/redis/redis.module';
+import { CacheModule } from './shared/cache/cache.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('REDIS_HOST') || 'localhost',
+          port: configService.get<number>('REDIS_PORT'),
+          password: configService.get<string>('REDIS_PASSWORD') || undefined,
+        },
+      }),
+      inject: [ConfigService],
+    }),
     DatabaseModule,
     UsersModule,
     AuthModule,
@@ -23,6 +40,9 @@ import { ServicesModule } from './features/services/service.module';
     BookingsModule,
     DashboardModule,
     ServicesModule,
+    MailModule,
+    RedisModule,
+    CacheModule,
   ],
   controllers: [AppController],
   providers: [
@@ -34,6 +54,7 @@ import { ServicesModule } from './features/services/service.module';
       provide: APP_GUARD,
       useClass: PermissionGuard,
     },
-    AppService],
+    AppService,
+    InvoiceService],
 })
 export class AppModule { }

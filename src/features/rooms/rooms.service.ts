@@ -10,10 +10,14 @@ import { QueryRoomDto } from './dto/query-room.dto';
 import { PaginatedResponse } from 'src/shared/dto/response.dto';
 import { TokenInfo } from 'src/shared/decorator/custom.decorator';
 import { RoomStatus as ROOM_STATUS } from 'src/shared/constant/constant';
+import { CacheService } from 'src/shared/cache/cache.service';
 
 @Injectable()
 export class RoomsService {
-  constructor(@InjectModel('Room') private roomModel: Model<any>) { }
+  constructor(
+    @InjectModel('Room') private roomModel: Model<any>,
+    private readonly cacheService: CacheService
+  ) { }
 
   async create(createRoomDto: CreateRoomDto) {
     const roomExists = await this.roomModel.findOne({ roomNumber: createRoomDto.roomNumber });
@@ -79,26 +83,34 @@ export class RoomsService {
 
   // ================= ĐỌC DANH SÁCH (CÓ PHÂN TRANG) ================= //
   async findAll(request: QueryRoomDto) {
+    // 👈 KHỐI 1: Tạo Cache Key Động dựa vào tham số query
+    // Dùng JSON.stringify để biến toàn bộ object request thành 1 chuỗi string duy nhất
+    const cacheKey = `ROOMS_LIST_${JSON.stringify(request)}`;
+
+    // 👈 KHỐI 2: Kiểm tra Redis trước khi làm bất cứ việc gì
+    const cachedData = await this.cacheService.get(cacheKey);
+    if (cachedData) {
+      console.log(`⚡ [Redis] Tốc độ bàn thờ - Đã lấy từ Cache: ${cacheKey}`);
+      return cachedData;
+    }
+
+    // --- BẮT ĐẦU ĐOẠN CODE CŨ CỦA BẠN ---
+    console.log(`🐌 [MongoDB] Phải chui vào DB tìm kiếm...`);
     const { page, size } = request;
     const skip = (page - 1) * size;
 
-    // 1. Build Query động
-    const query: any = { isDeleted: false }; // Luôn ẩn các phòng đã xóa mềm
+    const query: any = { isDeleted: false };
 
     if (request.roomNumber) {
-      // Tìm kiếm tương đối: Gõ "10" ra "101", "102"
       query.roomNumber = new RegExp(request.roomNumber.trim(), 'i');
     }
-
     if (request.type) {
       query.type = request.type;
     }
-
     if (request.status) {
       query.status = request.status;
     }
 
-    // 2. Tối ưu hiệu năng: Đếm tổng và Lấy dữ liệu cùng lúc
     const [total, items] = await Promise.all([
       this.roomModel.countDocuments(query).exec(),
       this.roomModel
@@ -106,12 +118,15 @@ export class RoomsService {
         .skip(skip)
         .limit(size)
         .sort({ createdAt: -1 })
-        .lean() // Giảm tải bộ nhớ
+        .lean()
         .exec()
     ]);
 
-    // 3. Trả về cấu trúc Phân trang đồng nhất với Bookings
-    return PaginatedResponse.create(items, total, page, size);
+    const result = PaginatedResponse.create(items, total, page, size);
+
+    await this.cacheService.set(cacheKey, result, 60);
+
+    return result;
   }
 
   async findByIds(ids: string[], session?: ClientSession) {

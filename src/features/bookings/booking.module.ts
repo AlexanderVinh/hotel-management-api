@@ -4,14 +4,23 @@ import { BookingsService } from './booking.service';
 import { RoomsService } from '../rooms/rooms.service';
 import { ServicesModule } from '../services/service.module';
 import { RoomsModule } from '../rooms/rooms.module';
+import { MailModule } from 'src/shared/mail/mail.module';
+import { InvoiceModule } from 'src/shared/invoice/invoice.module';
+import { BullModule } from '@nestjs/bull';
+import { InvoiceProcessor } from './invoice.processor';
 
 @Module({
     imports: [
         ServicesModule,
         RoomsModule,
+        MailModule,
+        InvoiceModule,
+        BullModule.registerQueue({
+            name: 'invoice-queue',
+        }),
     ],
     controllers: [BookingsController],
-    providers: [BookingsService],
+    providers: [BookingsService, InvoiceProcessor],
     exports: [BookingsService], // Export nếu sau này module Payment cần dùng
 })
 export class BookingsModule { }
