@@ -21,6 +21,6 @@ import { InvoiceProcessor } from './invoice.processor';
     ],
     controllers: [BookingsController],
     providers: [BookingsService, InvoiceProcessor],
-    exports: [BookingsService], // Export nếu sau này module Payment cần dùng
+    exports: [BookingsService],
 })
 export class BookingsModule { }

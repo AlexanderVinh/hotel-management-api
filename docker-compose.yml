@@ -20,23 +20,24 @@ services:
       - "6379:6379"
     networks:
       - hotel-network
-
   # 3. Backend: NestJS App
-  hotel-app:
-    build: .
-    container_name: hotel_backend_api
-    ports:
-      - "3000:3000"
-    depends_on:
-      - hotel-db
-      - hotel-redis
-    environment:
-      # LƯU Ý: Phải đổi localhost thành tên service trong mạng Docker
-      - DATABASE_URL=mongodb://hotel-db:27017/hotel_db
-      - REDIS_HOST=hotel-redis
-      - REDIS_PORT=6379
-    networks:
-      - hotel-network
+  # hotel-app:
+  #   build: .
+  #   container_name: hotel_backend_api
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - hotel-db
+  #     - hotel-redis
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     # LƯU Ý: Phải đổi localhost thành tên service trong mạng Docker
+  #     - DATABASE_URL=mongodb://hotel-db:27017/hotel_db
+  #     - REDIS_HOST=hotel-redis
+  #     - REDIS_PORT=6379
+  #   networks:
+  #     - hotel-network
 
 networks:
   hotel-network:

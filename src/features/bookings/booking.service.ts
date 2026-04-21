@@ -30,7 +30,6 @@ export class BookingsService {
     ) { }
 
     async createBooking(user: TokenInfo, payload: CreateBookingDto) {
-        const userId = user.userId;
         const { roomIds, checkInDate, checkOutDate, note } = payload;
         const checkIn = new Date(checkInDate);
         const checkOut = new Date(checkOutDate);
@@ -86,7 +85,7 @@ export class BookingsService {
 
             const newBooking = new this.bookingModel({
                 bookingCode,
-                userId: userId,
+                user: user.userId,
                 rooms: roomSnapshots,
                 checkInDate: checkIn,
                 checkOutDate: checkOut,
@@ -340,5 +339,13 @@ export class BookingsService {
         });
         // 6. Lưu kết quả
         return await booking.save();
+    }
+
+    async updatePaymentStatus(bookingId: string, paymentStatus: string) {
+        return await this.bookingModel.findByIdAndUpdate(
+            bookingId,
+            { paymentStatus: paymentStatus },
+            { new: true }
+        ).exec();
     }
 }

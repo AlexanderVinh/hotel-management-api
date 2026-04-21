@@ -54,3 +54,9 @@ export enum PaymentStatus {
     PAID = 'PAID',         // Đã thanh toán đủ
     REFUNDED = 'REFUNDED', // Đã hoàn tiền (Trường hợp hủy phòng)
 }
+
+export enum PaymentStatus {
+    PENDING = 'PENDING',
+    SUCCESS = 'SUCCESS',
+    FAILED = 'FAILED',
+}

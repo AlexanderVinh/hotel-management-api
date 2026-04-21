@@ -9,6 +9,9 @@ import { CreateTokenDto } from '../../shared/dto/token.dto';
 import { UsersService } from '../users/User.service';
 import { HOTEL_ACCESS_EXPIRED_IN, HOTEL_REFRESH_EXPIRED_IN, HOTEL_ACCESS_SECRET_KEY, HOTEL_REFRESH_SECRET_KEY } from 'src/config';
 import { UserRole } from 'src/shared/constant/constant';
+import { Permission } from 'src/schemas/permission.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +21,7 @@ export class AuthService {
         private readonly passwordService: PasswordService,
         private readonly tokenService: TokenService,
         private readonly jwtService: JwtService,
+        @InjectModel(Permission.name) private permissionModel: Model<Permission>,
     ) { }
 
     async login(loginDto: LoginDto) {
@@ -106,63 +110,28 @@ export class AuthService {
     }
 
     async checkPermission(userId: string, resource: string, actions: string[]): Promise<boolean> {
+        // 1. Kiểm tra sự tồn tại của User
         const user = await this.usersService.findById(userId);
         if (!user || user.isDeleted) return false;
 
-        // ==========================================
-        // 1. QUYỀN TỐI CAO: ADMIN (Chủ khách sạn)
-        // ==========================================
-        if (user.role === UserRole.ADMIN) {
-            return true; // Qua trạm thu phí không cần dừng
-        }
+        // 2. QUYỀN TỐI CAO: ADMIN luôn luôn được phép
+        if (user.role === UserRole.ADMIN) return true;
 
-        // ==========================================
-        // 2. QUYỀN VẬN HÀNH: STAFF (Lễ tân, Nhân viên)
-        // ==========================================
-        if (user.role === UserRole.STAFF) {
-            // Staff được Đọc, Sửa, và Quản lý (MANAGE) đơn đặt phòng
-            if (resource === 'bookings' && actions.every(a => ['READ', 'UPDATE', 'MANAGE'].includes(a))) {
-                return true;
-            }
+        // 3. Tra cứu quyền trong DB
+        const permission = await this.permissionModel
+            .findOne({
+                role: user.role,
+                resource: resource,
+                active: true // 👈 Chỉ lấy những quyền đang hoạt động
+            })
+            .lean() // 👈 Tăng hiệu năng vì chỉ cần lấy plain object
+            .exec(); // 👈 Đảm bảo trả về Promise chuẩn
 
-            // Lễ tân được Xem và Sửa Phòng (Đổi trạng thái dọn dẹp), nhưng KHÔNG ĐƯỢC XÓA PHÒNG
-            if (resource === 'rooms' && actions.every(a => ['READ', 'UPDATE', 'CREATE'].includes(a))) {
-                return true;
-            }
+        if (!permission) return false;
 
-            if (resource === 'dashboard' && actions.includes('READ')) {
-                return true;
-            }
-
-            return false; // Chặn các tài nguyên khác chưa khai báo
-        }
-
-        // ==========================================
-        // 3. QUYỀN CƠ BẢN: GUEST (Khách hàng vãng lai/Đã đăng ký)
-        // ==========================================
-        if (user.role === UserRole.GUEST) {
-
-            // 1. Đối với Đơn đặt phòng (Bookings)
-            // Khách CHỈ được: Xem lịch sử của mình (READ), Đặt phòng (CREATE), và Hủy phòng (CANCEL)
-            if (resource === 'bookings' && actions.every(a => ['READ', 'CREATE', 'CANCEL'].includes(a))) {
-                return true;
-            }
-
-            if (resource === 'rooms' && actions.every(a => ['READ'].includes(a))) {
-                return true;
-            }
-
-            // Tuyệt đối không cho Guest đụng vào các tài nguyên hệ thống
-            if (resource === 'users' || resource === 'dashboard') {
-                return false;
-            }
-
-            // Mặc định an toàn cho Guest
-            return false;
-        }
-
-        // Mặc định an toàn: Đóng cửa mọi trường hợp không khớp
-        return false;
+        // 4. Kiểm tra xem User có đầy đủ các hành động yêu cầu không
+        // Ví dụ: API yêu cầu ['READ', 'UPDATE'], DB có ['READ', 'UPDATE', 'DELETE'] -> OK
+        return actions.every(action => permission.actions.includes(action));
     }
 }
 

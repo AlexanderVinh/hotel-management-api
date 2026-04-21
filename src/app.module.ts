@@ -18,6 +18,7 @@ import { InvoiceService } from './shared/invoice/invoice.service';
 import { BullModule } from '@nestjs/bull';
 import { RedisModule } from './shared/redis/redis.module';
 import { CacheModule } from './shared/cache/cache.module';
+import { PaymentModule } from './features/payment/payment.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CacheModule } from './shared/cache/cache.module';
     MailModule,
     RedisModule,
     CacheModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
