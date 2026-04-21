@@ -12,11 +12,15 @@ import { TokenService } from '../../shared/service/token.service';
 // Import strategy nếu bạn đã tạo ở bước trước (nếu chưa tạo thì bạn có thể comment dòng này lại)
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { UsersService } from '../users/User.service';
+import { SeedService } from './seed.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Permission, PermissionSchema } from 'src/schemas/permission.schema';
 @Global()
 @Module({
   imports: [
     JwtModule.register({}),
     UsersModule,
+    MongooseModule.forFeature([{ name: Permission.name, schema: PermissionSchema }]),
   ],
   controllers: [AuthController],
   providers: [
@@ -24,6 +28,7 @@ import { UsersService } from '../users/User.service';
     PasswordService,
     TokenService,
     AccessTokenStrategy,
+    SeedService,
   ],
   exports: [AuthService]
 })

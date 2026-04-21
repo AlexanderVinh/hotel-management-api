@@ -13,7 +13,7 @@ export class Booking {
     bookingCode: string; // Mã đơn: BK-20260413-XYZ (Dễ tra cứu)
 
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-    userId: Types.ObjectId; // Ai là người đặt?
+    user: Types.ObjectId; // Ai là người đặt?
 
     // 👇 CHIẾN LƯỢC SNAPSHOT: Lưu thông tin phòng và giá tại thời điểm đặt
     @Prop([{
