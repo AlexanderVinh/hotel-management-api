@@ -33,7 +33,6 @@ export class VnpayService {
             throw new Error('Thiếu cấu hình VNPay trong biến môi trường (.env)');
         }
 
-        // Lưu lịch sử vào Database (Sử dụng field 'booking' thay vì 'bookingId' theo chuẩn của bạn)
         await this.transactionModel.create({
             booking: new Types.ObjectId(bookingRef),
             user: new Types.ObjectId(userId),
@@ -56,10 +55,8 @@ export class VnpayService {
         vnp_Params['vnp_IpAddr'] = ip === '::1' || !ip ? '127.0.0.1' : ip;
         vnp_Params['vnp_CreateDate'] = moment().format('YYYYMMDDHHmmss');
 
-        // Băm chữ ký
         const signed = this.generateSignature(vnp_Params, secretKey);
 
-        // Tạo URL cuối cùng (Chữ ký LUÔN nằm cuối cùng)
         const queryUrl = qs.stringify(this.sortObject(vnp_Params), { encode: false });
         const finalUrl = `${VNP_URL}?${queryUrl}&vnp_SecureHash=${signed}`;
 

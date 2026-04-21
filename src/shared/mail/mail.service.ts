@@ -27,7 +27,6 @@ export class MailService {
                     },
                 ],
             });
-            console.log(`[MailService] Đã gửi hóa đơn thành công đến ${toEmail}`);
         } catch (error) {
             console.error(`[MailService] Lỗi khi gửi mail:`, error);
         }
