@@ -90,12 +90,9 @@ export class RoomsService {
     // 👈 KHỐI 2: Kiểm tra Redis trước khi làm bất cứ việc gì
     const cachedData = await this.cacheService.get(cacheKey);
     if (cachedData) {
-      console.log(`⚡ [Redis] Tốc độ bàn thờ - Đã lấy từ Cache: ${cacheKey}`);
       return cachedData;
     }
 
-    // --- BẮT ĐẦU ĐOẠN CODE CŨ CỦA BẠN ---
-    console.log(`🐌 [MongoDB] Phải chui vào DB tìm kiếm...`);
     const { page, size } = request;
     const skip = (page - 1) * size;
 

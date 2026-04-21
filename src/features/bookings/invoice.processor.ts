@@ -16,7 +16,6 @@ export class InvoiceProcessor {
     @Process('send-invoice-job')
     async handleSendInvoice(job: Job<{ bookingId: string }>) {
         const { bookingId } = job.data;
-        console.log(`[Queue] 🚀 Đang xử lý hóa đơn cho đơn: ${bookingId}...`);
 
         try {
             // Lấy dữ liệu mới nhất từ DB
@@ -26,7 +25,7 @@ export class InvoiceProcessor {
                 .exec();
 
             if (!booking || !booking.userId?.email) {
-                console.log(`[Queue] ⚠️ Bỏ qua đơn ${bookingId} vì không có email.`);
+                console.log(`[Queue]  Bỏ qua đơn ${bookingId} vì không có email.`);
                 return;
             }
 
@@ -34,7 +33,7 @@ export class InvoiceProcessor {
             const pdfBuffer = await this.invoiceService.generateInvoicePdf(booking);
             await this.mailService.sendInvoiceEmail(booking.userId.email, pdfBuffer, booking.bookingCode);
 
-            console.log(`[Queue] ✅ Xong! Đã gửi hóa đơn thành công cho đơn ${bookingId}`);
+            console.log(`[Queue]  Xong! Đã gửi hóa đơn thành công cho đơn ${bookingId}`);
         } catch (error) {
             console.error(`[Queue] ❌ Lỗi khi xử lý đơn ${bookingId}:`, error);
             throw error; // Báo lỗi để BullMQ biết mà thử lại (Retry)

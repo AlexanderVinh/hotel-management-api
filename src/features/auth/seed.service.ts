@@ -73,7 +73,6 @@ export class SeedService implements OnModuleInit {
                     { upsert: true, new: true },
                 );
             }
-            console.log('✅ [Seed] Đã đồng bộ toàn bộ quyền từ hàm checkPermission cũ vào Database!');
         } catch (error) {
             console.error('❌ [Seed] Lỗi nạp quyền:', error);
         }
