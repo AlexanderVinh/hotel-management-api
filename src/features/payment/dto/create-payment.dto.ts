@@ -1,6 +1,5 @@
 import { IsNotEmpty, IsEnum, IsMongoId, IsString, IsOptional, IsNumber, Min } from 'class-validator';
 import { PaymentType } from 'src/shared/constant/constant'; // Import từ constant
-
 export class CreatePaymentDto {
     @IsNotEmpty()
     @IsString()

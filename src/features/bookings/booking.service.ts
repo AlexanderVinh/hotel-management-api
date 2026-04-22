@@ -344,7 +344,6 @@ export class BookingsService {
         ).exec();
     }
 
-
     async findOne(id: string) {
         return await this.bookingModel.findById(id).exec();
     }
