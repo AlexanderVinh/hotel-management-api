@@ -246,8 +246,10 @@ export class BookingsService {
             'send-invoice-job',
             { bookingId: updatedBooking._id.toString() },
             {
+                jobId: `invoice_${updatedBooking._id.toString()}`,
                 attempts: 3,
-                backoff: 5000
+                backoff: 5000,
+                removeOnComplete: true
             }
         );
 

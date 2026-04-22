@@ -34,16 +34,20 @@ export class PaymentController {
 
     @PublicMeta()
     @Get('vnpay-return')
-    // @Redirect()
+    @Redirect() // 👈 Bật lại cái này để tự động chuyển trang
     async vnpayReturn(@Query() query: any) {
+
+        const querystring = require('qs');
+        console.log('--- CHUỖI ĐỂ TEST IPN ---');
+        console.log(`http://localhost:3000/payments/vnpay-ipn?${querystring.stringify(query, { encode: false })}`);
         const rspCode = query['vnp_ResponseCode'];
         const orderInfo = query['vnp_OrderInfo'] || '';
 
-        const bookingId = orderInfo.split('Thanh_toan_booking_')[1];
+        // Tách chuỗi theo đúng format đã tạo: ..._cho_booking_{id}
+        const bookingId = orderInfo.split('_cho_booking_')[1];
 
         if (rspCode === '00') {
-            // return { url: `http://localhost:5173/payment-success?booking=${bookingId}` };
-            return query;
+            return { url: `http://localhost:5173/payment-success?booking=${bookingId}` };
         } else {
             return { url: `http://localhost:5173/payment-failed?booking=${bookingId}` };
         }
