@@ -33,8 +33,9 @@ export enum RoomType {
 
 export enum RoomStatus {
     AVAILABLE = 'AVAILABLE',     // Sẵn sàng đón khách
-    OCCUPIED = 'OCCUPIED',       // Đang có khách ở
-    MAINTENANCE = 'MAINTENANCE', // Đang bảo trì / dọn dẹp
+    BOOKED = 'BOOKED',           // Đã có người đặt (Giữ chỗ), khách chưa đến
+    OCCUPIED = 'OCCUPIED',       // Khách đã check-in và đang ở
+    MAINTENANCE = 'MAINTENANCE', // Đang dọn dẹp / sửa chữa
 }
 
 
@@ -63,6 +64,6 @@ export enum TransactionStatus {
 }
 
 export enum PaymentType {
-    FULL = 'FULL',       // Thanh toán 100%
-    DEPOSIT = 'DEPOSIT', // Đặt cọc 30%
+    FULL = 'FULL',
+    DEPOSIT = 'DEPOSIT',
 }
