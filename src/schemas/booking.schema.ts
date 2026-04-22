@@ -48,6 +48,9 @@ export class Booking {
     @Prop({ required: true, min: 0 })
     totalPrice: number; // Tổng tiền cuối cùng
 
+    @Prop({ type: Number, default: 0, min: 0 })
+    paidAmount: number; // Số tiền thực tế khách ĐÃ trả (qua VNPay hoặc tiền mặt)
+
     @Prop({ type: String, enum: BookingStatus, default: BookingStatus.PENDING })
     status: BookingStatus;
 

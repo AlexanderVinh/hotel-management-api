@@ -1,20 +1,23 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema, Types } from 'mongoose';
-import { PaymentStatus } from 'src/shared/constant/constant';
+import { PaymentType, TransactionStatus } from 'src/shared/constant/constant';
 
 @Schema({ timestamps: true })
 export class PaymentTransaction extends Document {
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Booking', required: true })
     booking: Types.ObjectId;
 
-    @Prop({ required: true })
-    vnp_TxnRef: string; // Mã tham chiếu giao dịch (duy nhất cho mỗi lần tạo link)
+    @Prop({ required: true, unique: true, index: true })
+    vnp_TxnRef: string;
 
     @Prop({ required: true })
     amount: number;
 
-    @Prop({ default: PaymentStatus.PENDING })
-    status: PaymentStatus;
+    @Prop({ type: String, enum: PaymentType, required: true })
+    paymentType: PaymentType;
+
+    @Prop({ default: TransactionStatus.PENDING })
+    status: TransactionStatus;
 
     @Prop()
     vnp_TransactionNo?: string; // Mã giao dịch do VNPay trả về sau khi thành công

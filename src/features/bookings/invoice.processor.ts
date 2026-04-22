@@ -16,27 +16,33 @@ export class InvoiceProcessor {
     @Process('send-invoice-job')
     async handleSendInvoice(job: Job<{ bookingId: string }>) {
         const { bookingId } = job.data;
-
         try {
-            // Lấy dữ liệu mới nhất từ DB
+            // 1. Lấy dữ liệu đầy đủ nhất để in hóa đơn
             const booking = await this.bookingModel.findById(bookingId)
-                .populate('userId', 'fullName email')
-                .populate('rooms.roomId', 'roomNumber type')
+                .populate('user', 'fullName email')
+                .populate('rooms.roomId', 'roomNumber type price') // Lấy thêm giá phòng
                 .exec();
 
-            if (!booking || !booking.userId?.email) {
-                console.log(`[Queue]  Bỏ qua đơn ${bookingId} vì không có email.`);
+            // 2. Bảo vệ: Nếu không có mail thì dừng
+            if (!booking || !booking.user?.email) {
+                console.log(`[Queue] ⚠️ Bỏ qua đơn ${bookingId} vì không tìm thấy email khách hàng.`);
                 return;
             }
 
-            // Thực hiện công việc nặng nhọc
-            const pdfBuffer = await this.invoiceService.generateInvoicePdf(booking);
-            await this.mailService.sendInvoiceEmail(booking.userId.email, pdfBuffer, booking.bookingCode);
+            console.log(`[Queue] 📝 Đang tạo hóa đơn PDF cho mã đơn: ${booking.bookingCode}`);
 
-            console.log(`[Queue]  Xong! Đã gửi hóa đơn thành công cho đơn ${bookingId}`);
+            const pdfBuffer = await this.invoiceService.generateInvoicePdf(booking);
+
+            await this.mailService.sendInvoiceEmail(
+                booking.user.email,
+                pdfBuffer,
+                booking.bookingCode
+            );
+
+            console.log(`[Queue] ✅ Thành công! Hóa đơn đã bay đến: ${booking.user.email}`);
         } catch (error) {
-            console.error(`[Queue] ❌ Lỗi khi xử lý đơn ${bookingId}:`, error);
-            throw error; // Báo lỗi để BullMQ biết mà thử lại (Retry)
+            console.error(`[Queue] ❌ Lỗi xử lý hóa đơn đơn ${bookingId}:`, error);
+            throw error;
         }
     }
 }

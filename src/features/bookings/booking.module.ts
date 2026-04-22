@@ -15,9 +15,6 @@ import { InvoiceProcessor } from './invoice.processor';
         RoomsModule,
         MailModule,
         InvoiceModule,
-        BullModule.registerQueue({
-            name: 'invoice-queue',
-        }),
     ],
     controllers: [BookingsController],
     providers: [BookingsService, InvoiceProcessor],

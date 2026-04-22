@@ -107,11 +107,10 @@ export class BookingsService {
         }
     }
 
-    // --- CÁC HÀM TIỆN ÍCH CƠ BẢN ---
 
     async getMyBookings(user: TokenInfo) {
         return this.bookingModel.find({ userId: user.userId })
-            .populate('rooms.roomId', 'roomNumber type') // Lấy thêm số phòng từ bảng Room
+            .populate('rooms.roomId', 'roomNumber type')
             .sort({ createdAt: -1 })
             .exec();
     }
@@ -124,7 +123,6 @@ export class BookingsService {
             throw new BadRequestException('Chỉ có thể hủy phòng khi đang chờ xử lý hoặc đã xác nhận!');
         }
 
-        // Logic 24h: Không cho hủy nếu còn cách giờ check-in dưới 24h
         const timeDiff = booking.checkInDate.getTime() - new Date().getTime();
         if (timeDiff < 24 * 60 * 60 * 1000) {
             throw new BadRequestException('Không thể hủy phòng trong vòng 24h trước khi check-in!');
@@ -138,29 +136,26 @@ export class BookingsService {
         const { page, size } = request;
         const skip = (page - 1) * size;
 
-        // KỸ THUẬT 1: Xây dựng Query Builder linh hoạt
-        const query: any = { isDeleted: false }; // Mặc định không lấy đơn đã xóa mềm
+        const query: any = { isDeleted: false };
 
         if (request.status) {
             query.status = request.status;
         }
 
         if (request.bookingCode) {
-            // Tìm kiếm tương đối (LIKE) và không phân biệt hoa/thường
             query.bookingCode = new RegExp(request.bookingCode.trim(), 'i');
         }
 
-        // KỸ THUẬT 2: Tối ưu hiệu năng bằng Promise.all (Chạy song song 2 lệnh)
         const [total, items] = await Promise.all([
             this.bookingModel.countDocuments(query).exec(),
             this.bookingModel
                 .find(query)
                 .skip(skip)
                 .limit(size)
-                .populate('userId', 'fullName email phone') // Nối sang bảng User lấy thông tin
-                .populate('rooms.roomId', 'roomNumber type') // Nối sang bảng Room
-                .sort({ createdAt: -1 }) // Đơn mới nhất xếp trên cùng
-                .lean() // Giúp object trả về nhẹ hơn, không dính các method ngầm của Mongoose
+                .populate('userId', 'fullName email phone')
+                .populate('rooms.roomId', 'roomNumber type')
+                .sort({ createdAt: -1 })
+                .lean()
                 .exec()
         ]);
 
@@ -224,8 +219,8 @@ export class BookingsService {
         const booking = await this.bookingModel.findById(id).exec();
         if (!booking || booking.isDeleted) throw new BadRequestException("Đơn đặt phòng không tồn tại.");
 
-        if (booking.status !== BookingStatus.CHECKED_IN) {
-            throw new BadRequestException("Khách chưa nhận phòng (Check-in), không thể Check-out!");
+        if (booking.status !== BookingStatus.COMPLETED) {
+            throw new BadRequestException("Khách chưa thanh toán (Completed), không thể Check-out!");
         }
 
         const updatedBooking = await this.bookingModel.findByIdAndUpdate(
@@ -347,5 +342,29 @@ export class BookingsService {
             { paymentStatus: paymentStatus },
             { new: true }
         ).exec();
+    }
+
+
+    async findOne(id: string) {
+        return await this.bookingModel.findById(id).exec();
+    }
+
+    // 2. Thêm hàm cập nhật trạng thái sau khi thanh toán VNPay
+    async updatePaymentAfterVnpay(id: string, data: {
+        paidAmount: number;
+        paymentStatus: string;
+        status: string;
+    }) {
+        return await this.bookingModel.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    paidAmount: data.paidAmount,
+                    paymentStatus: data.paymentStatus,
+                    status: data.status,
+                },
+            },
+            { new: true },
+        );
     }
 }

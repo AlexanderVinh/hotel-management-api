@@ -45,6 +45,7 @@ export enum BookingStatus {
     CHECKED_IN = 'CHECKED_IN', // Khách đã nhận phòng
     CHECKED_OUT = 'CHECKED_OUT', // Khách đã trả phòng (Hoàn tất)
     CANCELLED = 'CANCELLED',   // Đã hủy
+    COMPLETED = 'COMPLETED',   // Đơn hoàn tất (Đã thanh toán đủ và CHECKED_OUT)
 }
 
 // 2. Định nghĩa trạng thái thanh toán
@@ -55,8 +56,13 @@ export enum PaymentStatus {
     REFUNDED = 'REFUNDED', // Đã hoàn tiền (Trường hợp hủy phòng)
 }
 
-export enum PaymentStatus {
+export enum TransactionStatus {
     PENDING = 'PENDING',
     SUCCESS = 'SUCCESS',
     FAILED = 'FAILED',
+}
+
+export enum PaymentType {
+    FULL = 'FULL',       // Thanh toán 100%
+    DEPOSIT = 'DEPOSIT', // Đặt cọc 30%
 }

@@ -1,13 +1,18 @@
-import { IsNotEmpty, IsNumber, Min, IsMongoId, IsString } from 'class-validator';
+import { IsNotEmpty, IsEnum, IsMongoId, IsString, IsOptional, IsNumber, Min } from 'class-validator';
+import { PaymentType } from 'src/shared/constant/constant'; // Import từ constant
 
 export class CreatePaymentDto {
-    @IsNotEmpty()
-    @IsNumber()
-    @Min(10000, { message: 'Số tiền thanh toán tối thiểu phải từ 10.000 VNĐ trở lên' })
-    amount: number;
-
     @IsNotEmpty()
     @IsString()
     @IsMongoId({ message: 'Mã booking phải là định dạng ObjectId hợp lệ của MongoDB' })
     bookingRef: string;
+
+    @IsNotEmpty()
+    @IsEnum(PaymentType, { message: 'Loại thanh toán phải là FULL hoặc DEPOSIT' })
+    paymentType: PaymentType;
+
+    @IsOptional() // Không bắt buộc Client gửi lên nữa, Backend sẽ tự tính
+    @IsNumber()
+    @Min(10000)
+    amount?: number;
 }
