@@ -343,6 +343,10 @@ export class BookingsService {
             { new: true }
         ).exec();
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5cf456decc60fee0ed4524d6529c4f3950a9dc1f
 
     async findOne(id: string) {
         return await this.bookingModel.findById(id).exec();
