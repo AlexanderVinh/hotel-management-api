@@ -5,30 +5,30 @@ import { RoomStatus, RoomType } from 'src/shared/constant/constant';
 export type RoomDocument = Room & Document;
 
 @Schema({
-    timestamps: true, // Tự động sinh createdAt và updatedAt
-    collection: 'rooms' // Ép tên bảng trong MongoDB là 'rooms'
+    timestamps: true,
+    collection: 'rooms'
 })
 export class Room {
     @Prop({ required: true, unique: true, trim: true })
-    roomNumber: string; // VD: "101", "A205"
+    roomNumber: string;
 
     @Prop({ required: true, enum: RoomType, default: RoomType.SINGLE })
     type: RoomType;
 
     @Prop({ required: true, min: 0 })
-    pricePerNight: number; // Giá mỗi đêm
+    pricePerNight: number;
 
     @Prop({ required: true, min: 1, default: 2 })
-    capacity: number; // Sức chứa tối đa (Số người)
+    capacity: number;
 
     @Prop({ required: true, enum: RoomStatus, default: RoomStatus.AVAILABLE })
     status: RoomStatus;
 
     @Prop([{ type: String }])
-    amenities: string[]; // Các tiện ích: ["Wi-Fi", "TV", "Điều hòa"]
+    amenities: string[];
 
     @Prop({ type: String })
-    description: string; // Mô tả thêm về phòng
+    description: string;
 
     @Prop({ default: false })
     isDeleted: boolean;

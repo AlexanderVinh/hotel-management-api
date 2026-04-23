@@ -14,15 +14,13 @@ type JwtPayload = {
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
     constructor(
-        // @InjectModel('Token') private tokenModel: Model<Token>
     ) {
         super({
-            // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            // 👇 SỬA ĐOẠN NÀY: Dạy máy quét cách tìm thẻ trong Cookie
+
             jwtFromRequest: (req) => {
                 let token = null;
                 if (req && req.cookies) {
-                    token = req.cookies[COOKIE_NAME]; // Lấy thẻ từ chiếc hộp an toàn
+                    token = req.cookies[COOKIE_NAME];
                 }
                 return token;
             },

@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { BookingStatus, RoomStatus } from 'src/shared/constant/constant';
 import { RoomsService } from '../rooms/rooms.service';
 import { BookingsService } from '../bookings/booking.service';
-// Khuyên dùng thư viện moment-timezone hoặc dayjs để xử lý ngày giờ chuẩn xác
-// import * as dayjs from 'dayjs'; 
 
 @Injectable()
 export class DashboardService {
@@ -13,8 +11,6 @@ export class DashboardService {
     ) { }
 
     async getOverviewMetrics() {
-        // CÁCH AN TOÀN VỚI MÚI GIỜ (Nếu chưa dùng thư viện):
-        // Chỉnh offset về UTC+7 (Việt Nam) nếu Server chạy UTC
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
@@ -25,7 +21,7 @@ export class DashboardService {
             todayCheckIns,
             availableRooms,
             occupiedRooms,
-            maintenanceRooms // 👈 Thêm trạng thái Đang dọn
+            maintenanceRooms
         ] = await Promise.all([
             this.bookingsService.countBookingsByStatus(BookingStatus.PENDING),
             this.bookingsService.countCheckInsBetween(startOfToday, endOfToday),
@@ -43,12 +39,11 @@ export class DashboardService {
                 available: availableRooms,
                 occupied: occupiedRooms,
                 maintenance: maintenanceRooms,
-                total: availableRooms + occupiedRooms + maintenanceRooms // Tính luôn tổng phòng cho Frontend đỡ phải cộng
+                total: availableRooms + occupiedRooms + maintenanceRooms
             }
         };
     }
 
-    // 👈 Thêm tham số days, mặc định là 30 nếu Frontend không truyền
     async getRevenueStats(days: number = 30) {
         return await this.bookingsService.getRevenueStats(days);
     }

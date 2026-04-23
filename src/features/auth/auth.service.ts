@@ -1,4 +1,3 @@
-// src/features/auth/auth.service.ts
 import { forwardRef, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt'; // <-- Import thêm JwtService
 import { PasswordService } from '../../shared/service/password.service';
@@ -16,7 +15,7 @@ import { Model } from 'mongoose';
 @Injectable()
 export class AuthService {
     constructor(
-        @Inject(forwardRef(() => UsersService)) // 👈 Thêm lệnh này
+        @Inject(forwardRef(() => UsersService))
         private readonly usersService: UsersService,
         private readonly passwordService: PasswordService,
         private readonly tokenService: TokenService,
@@ -40,7 +39,6 @@ export class AuthService {
 
         const userIdStr = user._id.toString();
 
-        // Tự tay tạo Token tại đây bằng JwtService
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(
                 { userId: userIdStr, role: user.role },
@@ -110,27 +108,22 @@ export class AuthService {
     }
 
     async checkPermission(userId: string, resource: string, actions: string[]): Promise<boolean> {
-        // 1. Kiểm tra sự tồn tại của User
         const user = await this.usersService.findById(userId);
         if (!user || user.isDeleted) return false;
 
-        // 2. QUYỀN TỐI CAO: ADMIN luôn luôn được phép
         if (user.role === UserRole.ADMIN) return true;
 
-        // 3. Tra cứu quyền trong DB
         const permission = await this.permissionModel
             .findOne({
                 role: user.role,
                 resource: resource,
-                active: true // 👈 Chỉ lấy những quyền đang hoạt động
+                active: true
             })
-            .lean() // 👈 Tăng hiệu năng vì chỉ cần lấy plain object
-            .exec(); // 👈 Đảm bảo trả về Promise chuẩn
+            .lean()
+            .exec();
 
         if (!permission) return false;
 
-        // 4. Kiểm tra xem User có đầy đủ các hành động yêu cầu không
-        // Ví dụ: API yêu cầu ['READ', 'UPDATE'], DB có ['READ', 'UPDATE', 'DELETE'] -> OK
         return actions.every(action => permission.actions.includes(action));
     }
 }

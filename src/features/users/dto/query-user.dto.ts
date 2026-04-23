@@ -3,7 +3,6 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { UserRole } from 'src/shared/constant/constant';
 import { Pagination } from '../../../shared/dto/pagination.dto'; // Import file dùng chung
 
-// Kế thừa toàn bộ thuộc tính (page, size, createdAt...) từ Pagination
 export class QueryUserDto extends Pagination {
     @IsOptional()
     @IsString()

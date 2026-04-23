@@ -32,11 +32,9 @@ const formatValidationErrors = (errors: ValidationError[]) => {
                 //   }
                 //   pointer[err.property] = Object.values(err.constraints);
                 // }
-                // Lấy lỗi đầu tiên của field
                 const priority = ['isDefined', 'isNotEmpty', 'maxLength', 'matches'];
                 let firstMsg: string | undefined;
 
-                // tìm theo thứ tự ưu tiên
                 for (const key of priority) {
                     if (err.constraints[key]) {
                         firstMsg = err.constraints[key];
@@ -44,7 +42,6 @@ const formatValidationErrors = (errors: ValidationError[]) => {
                     }
                 }
 
-                // fallback nếu không có key trong priority
                 if (!firstMsg) {
                     firstMsg = Object.values(err.constraints)[0];
                 }

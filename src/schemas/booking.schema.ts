@@ -10,15 +10,14 @@ export type BookingDocument = Booking & Document;
 })
 export class Booking {
     @Prop({ required: true, unique: true, uppercase: true })
-    bookingCode: string; // Mã đơn: BK-20260413-XYZ (Dễ tra cứu)
+    bookingCode: string;
 
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     user: Types.ObjectId; // Ai là người đặt?
 
-    // 👇 CHIẾN LƯỢC SNAPSHOT: Lưu thông tin phòng và giá tại thời điểm đặt
     @Prop([{
         roomId: { type: Types.ObjectId, ref: 'Room', required: true },
-        priceAtBooking: { type: Number, required: true }, // Giá chốt, không đổi dù sau này phòng tăng giá
+        priceAtBooking: { type: Number, required: true },
     }])
     rooms: Array<{ roomId: Types.ObjectId; priceAtBooking: number }>;
 
@@ -31,10 +30,10 @@ export class Booking {
     @Prop([
         {
             serviceId: { type: Types.ObjectId, ref: 'Service', required: true },
-            name: { type: String, required: true }, // Lưu lại tên lúc gọi
-            price: { type: Number, required: true }, // Lưu lại giá lúc gọi
+            name: { type: String, required: true },
+            price: { type: Number, required: true },
             quantity: { type: Number, required: true, min: 1 },
-            addedAt: { type: Date, default: Date.now } // Thời điểm gọi đồ
+            addedAt: { type: Date, default: Date.now }
         }
     ])
     usedServices: {
@@ -46,10 +45,10 @@ export class Booking {
     }[];
 
     @Prop({ required: true, min: 0 })
-    totalPrice: number; // Tổng tiền cuối cùng
+    totalPrice: number;
 
     @Prop({ type: Number, default: 0, min: 0 })
-    paidAmount: number; // Số tiền thực tế khách ĐÃ trả (qua VNPay hoặc tiền mặt)
+    paidAmount: number;
 
     @Prop({ type: String, enum: BookingStatus, default: BookingStatus.PENDING })
     status: BookingStatus;
@@ -58,10 +57,10 @@ export class Booking {
     paymentStatus: PaymentStatus;
 
     @Prop({ type: String })
-    note: string; // Ghi chú của khách
+    note: string;
 
     @Prop({ default: false })
-    isDeleted: boolean; // Xóa mềm
+    isDeleted: boolean;
 }
 
 export const BookingSchema = SchemaFactory.createForClass(Booking);

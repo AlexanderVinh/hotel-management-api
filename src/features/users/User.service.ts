@@ -33,12 +33,10 @@ export class UsersService {
         return await newUser.save();
     }
 
-    // Trong UsersService
     async findAll(queryDto: QueryUserDto): Promise<any> {
         const { page, size } = queryDto;
         const skip = (page - 1) * size;
 
-        // Nhờ QueryService tự động build cục filter!
         const filter = await this.queryService.buildQuery(queryDto);
 
         const [data, total] = await Promise.all([
@@ -53,7 +51,6 @@ export class UsersService {
         return await this.userModel.findOne({ email }).exec();
     }
 
-    // Thêm vào dưới hàm findByEmail
     async findById(id: string): Promise<any> {
         return await this.userModel.findById(id).exec();
     }

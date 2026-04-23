@@ -16,9 +16,7 @@ export class SeedService implements OnModuleInit {
 
     async seedPermissions() {
         const defaultPermissions = [
-            // ==========================================
-            // 1. QUYỀN VẬN HÀNH: STAFF
-            // ==========================================
+
             {
                 role: UserRole.STAFF,
                 resource: 'bookings',
@@ -35,9 +33,6 @@ export class SeedService implements OnModuleInit {
                 actions: ['READ'],
             },
 
-            // ==========================================
-            // 2. QUYỀN CƠ BẢN: GUEST
-            // ==========================================
             {
                 role: UserRole.GUEST,
                 resource: 'bookings',
@@ -48,19 +43,15 @@ export class SeedService implements OnModuleInit {
                 resource: 'rooms',
                 actions: ['READ'],
             },
-            // Quyền thanh toán mới để bạn test VNPay
             {
                 role: UserRole.GUEST,
                 resource: 'payments',
                 actions: ['CREATE', 'READ'],
             },
 
-            // ==========================================
-            // 3. QUYỀN TỐI CAO: ADMIN (Dù có code bypass nhưng vẫn nên có trong DB)
-            // ==========================================
             {
                 role: UserRole.ADMIN,
-                resource: 'all', // Admin có thể để là 'all' hoặc liệt kê hết
+                resource: 'all',
                 actions: ['MANAGE'],
             }
         ];
@@ -74,7 +65,7 @@ export class SeedService implements OnModuleInit {
                 );
             }
         } catch (error) {
-            console.error('❌ [Seed] Lỗi nạp quyền:', error);
+            console.error('[Seed] Lỗi nạp quyền:', error);
         }
     }
 }

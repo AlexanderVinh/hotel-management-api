@@ -67,7 +67,6 @@ export class RoomsController {
     );
   }
 
-  // ================= API ĐƠN LẺ ================= //
 
   @Post()
   @ActionMeta(API_ACTION.CREATE)
@@ -78,7 +77,7 @@ export class RoomsController {
 
   @Get()
   @PublicMeta()
-  @ActionMeta(API_ACTION.READ) // Khách hàng có quyền READ nên sẽ được qua
+  @ActionMeta(API_ACTION.READ)
   async findAll(@Query() request: QueryRoomDto) {
     const data = await this.roomsService.findAll(request);
     return ResponseApi.create(data, 'Lấy danh sách phòng thành công!');

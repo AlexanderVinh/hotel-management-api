@@ -81,13 +81,9 @@ export class RoomsService {
     return result;
   }
 
-  // ================= ĐỌC DANH SÁCH (CÓ PHÂN TRANG) ================= //
   async findAll(request: QueryRoomDto) {
-    // 👈 KHỐI 1: Tạo Cache Key Động dựa vào tham số query
-    // Dùng JSON.stringify để biến toàn bộ object request thành 1 chuỗi string duy nhất
     const cacheKey = `ROOMS_LIST_${JSON.stringify(request)}`;
 
-    // 👈 KHỐI 2: Kiểm tra Redis trước khi làm bất cứ việc gì
     const cachedData = await this.cacheService.get(cacheKey);
     if (cachedData) {
       return cachedData;
@@ -150,7 +146,6 @@ export class RoomsService {
     const errors: any[] = [];
     const roomNumbersInFile = new Set<string>();
 
-    // 1. Kiểm tra Tiêu đề (Header)
     const headerRow = worksheet.getRow(1).values as any[];
     for (const col of IMPORT_ROOM_COLUMNS) {
       const headerValue = headerRow[col.column] ? headerRow[col.column].toString().trim() : '';
@@ -159,16 +154,15 @@ export class RoomsService {
       }
     }
 
-    // 2. Parse dữ liệu thô và check trùng lặp nội bộ
     const totalRows = worksheet.rowCount;
     for (let i = 2; i <= totalRows; i++) {
       const row = worksheet.getRow(i);
       const roomNumber = row.getCell(1).value?.toString().trim();
 
-      if (!roomNumber) continue; // Bỏ qua dòng trống
+      if (!roomNumber) continue;
 
       const itemMessages: string[] = [];
-      const upperRoomNumber = roomNumber.toUpperCase(); // Thường số phòng hay viết hoa (VD: P101)
+      const upperRoomNumber = roomNumber.toUpperCase();
 
       // Ánh xạ dữ liệu
       const roomItem: any = { _originalIndex: i };
@@ -183,7 +177,6 @@ export class RoomsService {
         }
       }
 
-      // Chốt chặn A: Trùng lặp NGAY TRONG file Excel
       if (roomNumbersInFile.has(upperRoomNumber)) {
         itemMessages.push('Số phòng bị trùng lặp bên trong file Excel');
       } else {
@@ -201,21 +194,17 @@ export class RoomsService {
       return { rooms: [], errors, totalSuccess: 0, totalError: errors.length };
     }
 
-    // 3. TỐI ƯU HIỆU NĂNG: Truy vấn Database 1 lần duy nhất bằng $in
     const roomNumbersToCheck = rawItems.map(item => item.roomNumber);
 
-    // Tìm kiếm không phân biệt hoa thường
     const regexRoomNumbers = roomNumbersToCheck.map(n => new RegExp(`^${n}$`, 'i'));
 
     const existRooms = await this.roomModel.find({
       roomNumber: { $in: regexRoomNumbers }
     }).select('roomNumber isDeleted').lean();
 
-    // Ép dữ liệu DB vào Map để tra cứu
     const existDBMap = new Map();
     existRooms.forEach(r => existDBMap.set(r.roomNumber.toUpperCase(), r));
 
-    // 4. Lọc ra những Item hợp lệ cuối cùng để lưu
     const itemsToSave = rawItems.filter(item => {
       const existRoom = existDBMap.get(item.roomNumber.toUpperCase());
 
@@ -234,16 +223,14 @@ export class RoomsService {
       return true;
     });
 
-    // 5. Tiến hành lưu vào Database
     let savedRooms: any[] = [];
     if (itemsToSave.length > 0) {
       const payloadToInsert = itemsToSave.map(({ _originalIndex, ...rest }) => rest);
       savedRooms = await this.roomModel.insertMany(payloadToInsert);
     }
 
-    // 6. Trả về cấu trúc Object đồng nhất
     return {
-      rooms: savedRooms, // Đổi từ services thành rooms cho đúng ngữ cảnh
+      rooms: savedRooms,
       errors: errors.sort((a, b) => a.index - b.index),
       totalSuccess: savedRooms.length,
       totalError: errors.length
@@ -254,13 +241,11 @@ export class RoomsService {
   async updateMultipleRoomStatus(roomIds: string[], newStatus: string, session?: ClientSession) {
     if (!roomIds || roomIds.length === 0) return;
 
-    // Dùng updateMany để tối ưu hiệu năng (Cập nhật 1 phát ăn ngay)
     const query = this.roomModel.updateMany(
-      { _id: { $in: roomIds } }, // Tìm tất cả các phòng có id nằm trong mảng
-      { $set: { status: newStatus } } // Đổi trạng thái mới
+      { _id: { $in: roomIds } },
+      { $set: { status: newStatus } }
     );
 
-    // Hỗ trợ Database Transaction nếu có truyền session sang
     if (session) {
       query.session(session);
     }
@@ -280,7 +265,6 @@ export class RoomsService {
     const room = await this.roomModel.findById(roomId);
     if (!room) throw new NotFoundException('Không tìm thấy phòng!');
 
-    // Kiểm tra trạng thái hợp lệ để dọn dẹp
     const validStatuses = [ROOM_STATUS.MAINTENANCE, ROOM_STATUS.OCCUPIED];
     if (!validStatuses.includes(room.status as any)) {
       throw new BadRequestException(`Phòng đang ở trạng thái ${room.status}, không cần dọn dẹp!`);
@@ -313,7 +297,7 @@ export class RoomsService {
 
     return {
       requestedCount: roomIds.length,
-      modifiedCount: result.modifiedCount, // Số phòng thực tế đã dọn xong
+      modifiedCount: result.modifiedCount,
       message: `Đã giải phóng ${result.modifiedCount}/${roomIds.length} phòng.`
     };
   }

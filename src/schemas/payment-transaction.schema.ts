@@ -20,16 +20,16 @@ export class PaymentTransaction extends Document {
     status: TransactionStatus;
 
     @Prop()
-    vnp_TransactionNo?: string; // Mã giao dịch do VNPay trả về sau khi thành công
+    vnp_TransactionNo?: string;
 
     @Prop()
-    vnp_ResponseCode?: string; // Mã phản hồi từ VNPay (00 là thành công)
+    vnp_ResponseCode?: string;
 
     @Prop({ type: Object })
-    rawResponse?: any; // Lưu toàn bộ data VNPay gửi về để đối soát sau này
+    rawResponse?: any;
 
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-    user: Types.ObjectId; // Thêm dòng này để trỏ về User
+    user: Types.ObjectId;
 
 }
 

@@ -14,7 +14,6 @@ export class ServicesService {
     constructor(@InjectModel(Service.name) private serviceModel: Model<ServiceDocument>) { }
 
     async create(createServiceDto: CreateServiceDto) {
-        // Kiểm tra trùng tên (Không phân biệt hoa thường)
         const isExist = await this.serviceModel.findOne({
             name: { $regex: new RegExp(`^${createServiceDto.name.trim()}$`, 'i') }
         });
@@ -30,10 +29,8 @@ export class ServicesService {
         const { page, size } = query;
         const skip = (page - 1) * size;
 
-        // Build Query động
         const filter: any = {};
 
-        // Mặc định chỉ lấy các dịch vụ đang hoạt động, trừ khi Admin muốn xem tất cả
         if (query.isActive !== undefined) {
             filter.isActive = query.isActive;
         } else {
@@ -41,10 +38,9 @@ export class ServicesService {
         }
 
         if (query.name) {
-            filter.name = new RegExp(query.name.trim(), 'i'); // Tìm kiếm tương đối
+            filter.name = new RegExp(query.name.trim(), 'i');
         }
 
-        // Đếm tổng và lấy dữ liệu song song
         const [total, items] = await Promise.all([
             this.serviceModel.countDocuments(filter).exec(),
             this.serviceModel
@@ -59,19 +55,16 @@ export class ServicesService {
         return PaginatedResponse.create(items, total, page, size);
     }
 
-    // ================= LẤY CHI TIẾT (READ ONE) ================= //
     async findOne(id: string) {
         const service = await this.serviceModel.findById(id).exec();
         if (!service) throw new NotFoundException('Không tìm thấy dịch vụ này!');
         return service;
     }
 
-    // ================= CẬP NHẬT (UPDATE) ================= //
     async update(id: string, updateServiceDto: UpdateServiceDto) {
-        // Nếu có cập nhật tên, phải check xem tên mới có bị trùng với thằng khác không
         if (updateServiceDto.name) {
             const isExist = await this.serviceModel.findOne({
-                _id: { $ne: id }, // Bỏ qua chính nó
+                _id: { $ne: id },
                 name: { $regex: new RegExp(`^${updateServiceDto.name.trim()}$`, 'i') }
             });
             if (isExist) throw new BadRequestException('Tên dịch vụ này đã bị trùng lặp!');
@@ -88,8 +81,6 @@ export class ServicesService {
     }
 
     async remove(id: string) {
-        // Thay vì xóa hẳn, ta update cờ isActive = false
-        // Điều này đảm bảo các hóa đơn cũ (Booking) gọi món này không bị lỗi khi truy xuất
         const deletedService = await this.serviceModel.findByIdAndUpdate(
             id,
             { isActive: false },
@@ -111,7 +102,6 @@ export class ServicesService {
         const errors: any[] = [];
         const namesInFile = new Set<string>();
 
-        // 1. Kiểm tra Tiêu đề (Header)
         const headerRow = worksheet.getRow(1).values as any[];
         for (const col of IMPORT_SERVICE_COLUMNS) {
             const headerValue = headerRow[col.column] ? headerRow[col.column].toString().trim() : '';
@@ -120,18 +110,16 @@ export class ServicesService {
             }
         }
 
-        // 2. Parse dữ liệu thô và check trùng lặp nội bộ
         const totalRows = worksheet.rowCount;
         for (let i = 2; i <= totalRows; i++) {
             const row = worksheet.getRow(i);
             const serviceName = row.getCell(1).value?.toString().trim();
 
-            if (!serviceName) continue; // Bỏ qua dòng trống
+            if (!serviceName) continue;
 
             const itemMessages: string[] = [];
             const lowerName = serviceName.toLowerCase();
 
-            // Ánh xạ dữ liệu và gắn index gốc để tracking lỗi
             const serviceItem: any = { _originalIndex: i };
             for (const col of IMPORT_SERVICE_COLUMNS) {
                 const cellValue = row.getCell(col.column).value;
@@ -144,7 +132,6 @@ export class ServicesService {
                 }
             }
 
-            // Chốt chặn A: Trùng lặp NGAY TRONG file Excel
             if (namesInFile.has(lowerName)) {
                 itemMessages.push('Tên dịch vụ bị trùng lặp bên trong file Excel');
             } else {
@@ -158,26 +145,21 @@ export class ServicesService {
             }
         }
 
-        // Nếu file trống hoặc tất cả đều lỗi ngay từ vòng 1
         if (rawItems.length === 0) {
             return { services: [], errors, totalSuccess: 0, totalError: errors.length };
         }
 
-        // 3. TỐI ƯU HIỆU NĂNG: Truy vấn Database 1 lần duy nhất bằng $in
         const namesToCheck = rawItems.map(item => item.name);
 
-        // Chuyển mảng tên thành mảng RegExp để tìm chính xác không phân biệt hoa thường
         const regexNames = namesToCheck.map(n => new RegExp(`^${n}$`, 'i'));
 
         const existServices = await this.serviceModel.find({
             name: { $in: regexNames }
         }).select('name isActive').lean();
 
-        // Ép dữ liệu DB vào một Map để tra cứu siêu tốc O(1)
         const existDBMap = new Map();
         existServices.forEach(s => existDBMap.set(s.name.toLowerCase(), s));
 
-        // 4. Lọc ra những Item hợp lệ cuối cùng để lưu
         const itemsToSave = rawItems.filter(item => {
             const existSvc = existDBMap.get(item.name.toLowerCase());
 
@@ -196,18 +178,15 @@ export class ServicesService {
             return true;
         });
 
-        // 5. Tiến hành lưu vào Database
         let savedServices: any[] = [];
         if (itemsToSave.length > 0) {
-            // Xóa biến tạm _originalIndex trước khi insert vào DB
             const payloadToInsert = itemsToSave.map(({ _originalIndex, ...rest }) => rest);
             savedServices = await this.serviceModel.insertMany(payloadToInsert);
         }
 
-        // 6. Trả về cấu trúc Object y hệt học viện
         return {
             services: savedServices,
-            errors: errors.sort((a, b) => a.index - b.index), // Sắp xếp lỗi theo thứ tự dòng từ trên xuống
+            errors: errors.sort((a, b) => a.index - b.index),
             totalSuccess: savedServices.length,
             totalError: errors.length
         };
@@ -217,7 +196,7 @@ export class ServicesService {
         return await this.serviceModel
             .find({
                 _id: { $in: ids },
-                isActive: true // Chỉ lấy các dịch vụ còn đang kinh doanh
+                isActive: true
             })
             .lean()
             .exec();

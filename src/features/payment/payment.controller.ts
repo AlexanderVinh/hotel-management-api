@@ -34,7 +34,7 @@ export class PaymentController {
 
     @PublicMeta()
     @Get('vnpay-return')
-    @Redirect() // 👈 Bật lại cái này để tự động chuyển trang
+    @Redirect()
     async vnpayReturn(@Query() query: any) {
 
         const querystring = require('qs');
@@ -43,7 +43,6 @@ export class PaymentController {
         const rspCode = query['vnp_ResponseCode'];
         const orderInfo = query['vnp_OrderInfo'] || '';
 
-        // Tách chuỗi theo đúng format đã tạo: ..._cho_booking_{id}
         const bookingId = orderInfo.split('_cho_booking_')[1];
 
         if (rspCode === '00') {

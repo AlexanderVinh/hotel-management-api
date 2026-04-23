@@ -9,7 +9,7 @@ export const HOTEL_ACCESS_EXPIRED_IN = process.env.HOTEL_ACCESS_EXPIRED_IN || '1
 export const HOTEL_REFRESH_EXPIRED_IN = process.env.HOTEL_REFRESH_EXPIRED_IN || '30d';
 export const COOKIE_NAME = process.env.COOKIE_NAME || 'dev_hotel_token';
 export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || 'localhost';
-export const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true' || false; // Nếu bằng true thì chỉ chạy trên web HTTPS
+export const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true' || false;
 
 export const VNP_TMN_CODE = process.env.VNP_TMN_CODE || '';
 export const VNP_HASH_SECRET = process.env.VNP_HASH_SECRET || '';

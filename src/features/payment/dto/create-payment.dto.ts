@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsEnum, IsMongoId, IsString, IsOptional, IsNumber, Min } from 'class-validator';
-import { PaymentType } from 'src/shared/constant/constant'; // Import từ constant
+import { PaymentType } from 'src/shared/constant/constant';
 export class CreatePaymentDto {
     @IsNotEmpty()
     @IsString()
@@ -10,7 +10,7 @@ export class CreatePaymentDto {
     @IsEnum(PaymentType, { message: 'Loại thanh toán phải là FULL hoặc DEPOSIT' })
     paymentType: PaymentType;
 
-    @IsOptional() // Không bắt buộc Client gửi lên nữa, Backend sẽ tự tính
+    @IsOptional()
     @IsNumber()
     @Min(10000)
     amount?: number;

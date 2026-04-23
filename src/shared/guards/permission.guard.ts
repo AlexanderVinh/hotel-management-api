@@ -12,9 +12,8 @@ export class PermissionGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
-        const user = request.user; // TokenInfo đã được nhét vào đây từ JwtStrategy
+        const user = request.user;
 
-        // 1. Kiểm tra các API công khai
         const isPublic = this.reflector.get<boolean>('isPublic', context.getHandler());
         const skipAuthHandler = this.reflector.get<boolean>(SKIP_AUTHORIZATION_KEY, context.getHandler());
         const skipAuthClass = this.reflector.get<boolean>(SKIP_AUTHORIZATION_KEY, context.getClass());
@@ -23,25 +22,20 @@ export class PermissionGuard implements CanActivate {
             return true;
         }
 
-        // Nếu chưa đăng nhập mà dám mò vào API đóng -> Chặn
         if (!user) {
             throw new UnauthorizedException('Vui lòng đăng nhập để tiếp tục!');
         }
 
-        // 2. Lấy Resource (Tài nguyên) và Action (Hành động)
         const resource = this.reflector.get<string>('resource', context.getClass());
         const action = this.reflector.get<string>('action', context.getHandler());
 
-        // Nếu API không cắm biển Action -> Mặc định cho qua
         if (!action) {
             if (user.role === 'admin') return true;
             throw new ForbiddenException('API này chưa được phân quyền. Vui lòng liên hệ Admin!');
         }
 
-        // 3. Tách chuỗi Action (Ví dụ: 'READ|CREATE' -> ['READ', 'CREATE'])
         const actions = action.split('|');
 
-        // 4. Nhờ AuthService kiểm tra Database
         const hasPermission = await this.authService.checkPermission(user.userId, resource, actions);
 
         if (!hasPermission) {

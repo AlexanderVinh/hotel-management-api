@@ -19,6 +19,7 @@ import { BullModule } from '@nestjs/bull';
 import { RedisModule } from './shared/redis/redis.module';
 import { CacheModule } from './shared/cache/cache.module';
 import { PaymentModule } from './features/payment/payment.module';
+import { SharedQueueModule } from './shared/queue/queue.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PaymentModule } from './features/payment/payment.module';
     RedisModule,
     CacheModule,
     PaymentModule,
+    SharedQueueModule
   ],
   controllers: [AppController],
   providers: [

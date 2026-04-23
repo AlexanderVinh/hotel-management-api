@@ -13,10 +13,9 @@ import { AddExtraServicesDto } from './dto/add-extra-service.dto';
 export class BookingsController {
     constructor(private readonly bookingsService: BookingsService) { }
 
-    // ================= KHÁCH HÀNG (USER) ================= //
 
     @Post()
-    @ActionMeta(API_ACTION.CREATE) // 👈 Hành động Tạo
+    @ActionMeta(API_ACTION.CREATE)
     async create(
         @Auth() user: TokenInfo,
         @Body() createBookingDto: CreateBookingDto
@@ -26,14 +25,14 @@ export class BookingsController {
     }
 
     @Get('my-bookings')
-    @ActionMeta(API_ACTION.READ) // 👈 Hành động Đọc
+    @ActionMeta(API_ACTION.READ)
     async getMyBookings(@Auth() user: TokenInfo) {
         const data = await this.bookingsService.getMyBookings(user);
         return ResponseApi.create(data, 'Lấy lịch sử đặt phòng thành công!');
     }
 
     @Patch('cancel/:id')
-    @ActionMeta(API_ACTION.CANCEL) // 👈 Hành động Cập nhật (Hủy đơn)
+    @ActionMeta(API_ACTION.CANCEL)
     async cancelBooking(
         @Param('id') bookingId: string,
         @Auth() user: TokenInfo
@@ -41,8 +40,6 @@ export class BookingsController {
         const data = await this.bookingsService.cancelBooking(bookingId, user);
         return ResponseApi.create(data, 'Hủy đặt phòng thành công!');
     }
-
-    // ================= LỄ TÂN / ADMIN ================= //
 
     @Get()
     @ActionMeta(API_ACTION.MANAGE)
@@ -82,7 +79,7 @@ export class BookingsController {
     @ActionMeta(API_ACTION.UPDATE)
     async addServices(
         @Param('id') bookingId: string,
-        @Body() payload: AddExtraServicesDto // Nhận mảng items
+        @Body() payload: AddExtraServicesDto
     ) {
         const data = await this.bookingsService.addExtraServices(bookingId, payload);
         return ResponseApi.create(data, 'Đã cập nhật dịch vụ thành công!');

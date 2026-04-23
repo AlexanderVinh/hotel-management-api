@@ -45,7 +45,6 @@ export class VnpayService {
             paymentType: paymentType
         });
 
-        // 🎯 Chuẩn bị Data
         let vnp_Params: any = {};
         vnp_Params['vnp_Version'] = '2.1.0';
         vnp_Params['vnp_Command'] = 'pay';
@@ -57,10 +56,9 @@ export class VnpayService {
         vnp_Params['vnp_OrderType'] = 'other';
         vnp_Params['vnp_Amount'] = finalAmount * 100;
         vnp_Params['vnp_ReturnUrl'] = VNP_RETURN_URL;
-        vnp_Params['vnp_IpAddr'] = ip || '127.0.0.1'; // 👈 Nên lấy IP thật thay vì hardcode
+        vnp_Params['vnp_IpAddr'] = ip || '127.0.0.1';
         vnp_Params['vnp_CreateDate'] = moment().format('YYYYMMDDHHmmss');
 
-        // 🎯 Sắp xếp và tạo chữ ký theo hàm chuẩn
         vnp_Params = this.sortObject(vnp_Params);
         const signData = querystring.stringify(vnp_Params, { encode: false });
         const signed = this.computeVnpayHash(signData, VNP_HASH_SECRET);
@@ -74,16 +72,14 @@ export class VnpayService {
     }
 
     async vnpayIpn(query: any): Promise<any> {
-        try { // 🎯 MỤC 2: Bọc try...catch toàn bộ logic
+        try {
             let vnp_Params = { ...query };
             const secureHash = vnp_Params['vnp_SecureHash'];
 
-            // 1. Xóa các trường Hash và sắp xếp
             delete vnp_Params['vnp_SecureHash'];
             delete vnp_Params['vnp_SecureHashType'];
             vnp_Params = this.sortObject(vnp_Params);
 
-            // 2. Tự nối chuỗi và băm (Dùng hàm compute chung)
             let signData = '';
             for (const key in vnp_Params) {
                 if (Object.prototype.hasOwnProperty.call(vnp_Params, key)) {
@@ -94,7 +90,6 @@ export class VnpayService {
 
             const signed = this.computeVnpayHash(signData, VNP_HASH_SECRET);
 
-            // 3. Kiểm tra chữ ký
             if (secureHash !== signed) {
                 console.error('--- ❌ SAI CHỮ KÝ IPN ---');
                 return { RspCode: '97', Message: 'Fail checksum' };
@@ -104,7 +99,6 @@ export class VnpayService {
             const amount = Number(vnp_Params['vnp_Amount']) / 100;
             const rspCode = vnp_Params['vnp_ResponseCode'];
 
-            // 4. ATOMIC UPDATE: Khóa giao dịch ngay lập tức để chống Race Condition
             const transaction = await this.transactionModel.findOneAndUpdate(
                 { vnp_TxnRef: txnRef, status: TransactionStatus.PENDING },
                 { status: rspCode === '00' ? TransactionStatus.SUCCESS : TransactionStatus.FAILED },
@@ -117,7 +111,6 @@ export class VnpayService {
                 return { RspCode: '01', Message: 'Order not found' };
             }
 
-            // 5. Xử lý logic Booking
             if (rspCode === '00') {
                 const booking = await this.bookingsService.findOne(transaction.booking.toString());
                 if (booking) {
@@ -129,7 +122,6 @@ export class VnpayService {
                         paymentStatus: isFullyPaid ? PaymentStatus.PAID : PaymentStatus.PARTIAL,
                     };
 
-                    // Check-out tự động nếu đã thanh toán đủ
                     if (isFullyPaid && booking.status === BookingStatus.CHECKED_IN) {
                         updateData.status = BookingStatus.COMPLETED;
                         updateData.checkOutDate = new Date();
@@ -158,8 +150,7 @@ export class VnpayService {
             return { RspCode: '00', Message: 'success' };
 
         } catch (error) {
-            // 🎯 MỤC 2: Trả về lỗi 99 để VNPAY biết và gọi lại (Retry) sau
-            console.error('--- ❌ LỖI HỆ THỐNG IPN ---', error);
+            console.error('--- LỖI HỆ THỐNG IPN ---', error);
             return { RspCode: '99', Message: 'Unknown error' };
         }
     }

@@ -1,4 +1,3 @@
-// src/features/auth/auth.controller.ts
 import { Controller, Post, Body, Get, BadRequestException, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -6,7 +5,6 @@ import { COOKIE_DOMAIN, COOKIE_NAME, COOKIE_SECURE } from '../../config';
 import type { Response } from 'express';
 import { PublicMeta, Auth } from 'src/shared/decorator/custom.decorator';
 
-// 👇 Import bảo vật mới vào
 import { ResponseApi } from '../../shared/dto/response.dto';
 
 @Controller('auth')
@@ -29,7 +27,6 @@ export class AuthController {
             maxAge: 1000 * 60 * 60 * 24,
         });
 
-        // 👇 BỌC LẠI BẰNG RESPONSE API
         return ResponseApi.create(data, 'Đăng nhập thành công!');
     }
 

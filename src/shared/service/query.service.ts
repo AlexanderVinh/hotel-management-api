@@ -16,17 +16,14 @@ export class QueryService {
             const value = request[key];
             if (!value && value !== 0 && value !== false) continue;
 
-            // Tìm kiếm bằng Regex (chứa từ khóa, không phân biệt hoa thường)
             if (regexFields.includes(key)) {
                 query[key] = { $regex: value, $options: 'i' };
             }
-            // Lọc chính xác (vd: role, status)
             else if (key !== 'createdAtFrom' && key !== 'createdAtTo') {
                 query[key] = value;
             }
         }
 
-        // Lọc theo khoảng thời gian tạo
         if (request.createdAtFrom || request.createdAtTo) {
             query['createdAt'] = {};
             if (request.createdAtFrom) {
@@ -36,8 +33,6 @@ export class QueryService {
                 query['createdAt']['$lte'] = new Date(request.createdAtTo);
             }
         }
-
-        // Nếu dự án của bạn dùng soft delete
         // query['isDeleted'] = { $ne: true }; 
 
         return query;

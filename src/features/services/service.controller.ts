@@ -17,14 +17,14 @@ export class ServicesController {
     constructor(private readonly servicesService: ServicesService) { }
 
     @Post()
-    @ActionMeta(API_ACTION.CREATE) // Admin tạo mới
+    @ActionMeta(API_ACTION.CREATE)
     async create(@Body() createServiceDto: CreateServiceDto) {
         const data = await this.servicesService.create(createServiceDto);
         return ResponseApi.create(data, 'Tạo dịch vụ mới thành công!');
     }
 
     @Get()
-    @ActionMeta(API_ACTION.READ) // Staff/Admin xem danh sách
+    @ActionMeta(API_ACTION.READ)
     async findAll(@Query() query: any) {
         const data = await this.servicesService.findAll(query);
         return ResponseApi.create(data, 'Lấy danh sách dịch vụ thành công!');
@@ -38,14 +38,14 @@ export class ServicesController {
     }
 
     @Patch(':id')
-    @ActionMeta(API_ACTION.UPDATE) // Admin cập nhật giá/tên
+    @ActionMeta(API_ACTION.UPDATE)
     async update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
         const data = await this.servicesService.update(id, updateServiceDto);
         return ResponseApi.create(data, 'Cập nhật thông tin dịch vụ thành công!');
     }
 
     @Delete(':id')
-    @ActionMeta(API_ACTION.DELETE) // Admin ngưng bán dịch vụ
+    @ActionMeta(API_ACTION.DELETE)
     async remove(@Param('id') id: string) {
         const data = await this.servicesService.remove(id);
         return ResponseApi.create(data, 'Đã vô hiệu hóa dịch vụ này!');
@@ -57,7 +57,6 @@ export class ServicesController {
     async importExcel(@UploadedFile() file: Express.Multer.File) {
         if (!file) throw new BadRequestException('Vui lòng đính kèm file Excel!');
 
-        // 1. Service sẽ xử lý file và trả về cấu trúc chuẩn của học viện
         const data = await this.servicesService.importExcel(file.buffer);
         return ResponseApi.create(
             data,
@@ -65,7 +64,7 @@ export class ServicesController {
     }
 
     @Get('template/download')
-    @ActionMeta(API_ACTION.READ) // Khuyên dùng READ để Staff cũng lấy được mẫu
+    @ActionMeta(API_ACTION.READ)
     downloadTemplate(@Res() res: ExpressResponse) {
         const filePath = join(process.cwd(), 'template', 'Service_Import_Template.xlsx');
 

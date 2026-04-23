@@ -2,12 +2,12 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 
-@Global() // Biến nó thành Global để không phải import lắt nhắt nhiều nơi
+@Global()
 @Module({
     providers: [
         {
             provide: 'REDIS_CLIENT',
-            inject: [ConfigService], // Tiêm ConfigService vào
+            inject: [ConfigService],
             useFactory: (configService: ConfigService) => {
                 return new Redis({
                     host: configService.get<string>('REDIS_HOST'),

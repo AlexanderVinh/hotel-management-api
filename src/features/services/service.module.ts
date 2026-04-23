@@ -7,6 +7,6 @@ import { ServicesService } from './service.service';
     ],
     controllers: [ServicesController],
     providers: [ServicesService],
-    exports: [ServicesService] // 👈 Mở cửa sẵn: Lát nữa BookingModule sẽ cần gọi sang đây để lấy giá tiền!
+    exports: [ServicesService]
 })
 export class ServicesModule { }

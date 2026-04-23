@@ -1,4 +1,3 @@
-// src/shared/dto/pagination.dto.ts
 import { Transform, Type } from 'class-transformer';
 import { IsNumber, IsOptional, Max, Min } from 'class-validator';
 import { MAX_PAGE_SIZE, PAGE, PAGE_SIZE } from '../constant/constant';
@@ -8,7 +7,7 @@ export class Pagination {
     @Type(() => Number)
     @Transform(({ value }) => (value && value !== null && value !== undefined && value !== '' ? Number(value) : PAGE))
     @IsNumber()
-    @Min(1) // Đổi từ 0 thành 1 để page bắt đầu từ trang 1
+    @Min(1)
     page: number = PAGE;
 
     @IsOptional()
