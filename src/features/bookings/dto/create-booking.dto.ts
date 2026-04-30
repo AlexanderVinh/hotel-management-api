@@ -3,7 +3,7 @@ import { IsString, IsArray, IsDateString, IsOptional, ArrayMinSize, ArrayMaxSize
 export class CreateBookingDto {
     @IsArray()
     @ArrayMinSize(1, { message: 'Bạn phải chọn ít nhất 1 phòng' })
-    @ArrayMaxSize(5, { message: 'Một đơn đặt phòng tối đa được chọn 5 phòng' }) // 👈 Giải quyết yêu cầu tối đa
+    @ArrayMaxSize(5, { message: 'Một đơn đặt phòng tối đa được chọn 5 phòng' })
     roomIds: string[];
 
     @IsDateString()

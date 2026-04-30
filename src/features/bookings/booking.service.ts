@@ -15,6 +15,7 @@ import { InvoiceService } from 'src/shared/invoice/invoice.service';
 import { MailService } from 'src/shared/mail/mail.service';
 import { type Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { CacheService } from 'src/shared/cache/cache.service';
 
 @Injectable()
 export class BookingsService {
@@ -26,11 +27,17 @@ export class BookingsService {
         @InjectConnection() private connection: Connection, // Dùng để mở Transaction
         private readonly invoiceService: InvoiceService,
         private readonly mailService: MailService,
+        private readonly cacheService: CacheService,
         @InjectQueue('invoice-queue') private invoiceQueue: Queue,
     ) { }
 
     async createBooking(user: TokenInfo, payload: CreateBookingDto) {
-        const { roomIds, checkInDate, checkOutDate, note } = payload;
+        const { roomIds: requestedRooms, checkInDate, checkOutDate, note } = payload;
+
+        const lockKeys = requestedRooms.sort().map(id => `lock:room:${id}`);
+        const acquiredLocks: string[] = [];
+        let isRoomsStatusChanged = false;
+
         const checkIn = new Date(checkInDate);
         const checkOut = new Date(checkOutDate);
         const now = new Date();
@@ -44,12 +51,19 @@ export class BookingsService {
         const daysInAdvance = Math.ceil((checkIn.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         if (daysInAdvance > 180) throw new BadRequestException('Chỉ được đặt trước tối đa 6 tháng!');
 
-        // const session = await this.connection.startSession();
-        // session.startTransaction();
-
         try {
+            // 1. Lấy khóa Redis
+            for (const key of lockKeys) {
+                const locked = await this.cacheService.acquireLock(key, 10);
+                if (!locked) {
+                    throw new BadRequestException('Hệ thống đang bận xử lý phòng này cho khách khác. Vui lòng thử lại sau vài giây!');
+                }
+                acquiredLocks.push(key);
+            }
+
+            // 2. Query dùng 'rooms.roomId'
             const overlappingBookings = await this.bookingModel.find({
-                'rooms.roomId': { $in: roomIds },
+                'rooms.roomId': { $in: requestedRooms },
                 status: { $nin: [BookingStatus.CANCELLED, BookingStatus.CHECKED_OUT] },
                 checkInDate: { $lt: checkOut },
                 checkOutDate: { $gt: checkIn }
@@ -59,15 +73,16 @@ export class BookingsService {
                 throw new BadRequestException('Một hoặc nhiều phòng bạn chọn đã có người đặt trong thời gian này!');
             }
 
-            const rooms = await this.roomsService.findByIds(roomIds);
+            const rooms = await this.roomsService.findByIds(requestedRooms);
 
             const availableRooms = rooms.filter(room => room.status === RoomStatus.AVAILABLE);
 
-            if (availableRooms.length !== roomIds.length) {
+            if (availableRooms.length !== requestedRooms.length) {
                 throw new BadRequestException('Có phòng không tồn tại hoặc đã bị ai đó đặt mất. Vui lòng chọn lại!');
             }
 
             let totalPrice = 0;
+            // 3. Lưu vào DB dùng 'roomId'
             const roomSnapshots = availableRooms.map(room => {
                 totalPrice += (room.pricePerNight * nights);
                 return {
@@ -76,7 +91,8 @@ export class BookingsService {
                 };
             });
 
-            await this.roomsService.updateMultipleRoomStatus(roomIds, RoomStatus.BOOKED);
+            await this.roomsService.updateMultipleRoomStatus(requestedRooms, RoomStatus.BOOKED);
+            isRoomsStatusChanged = true;
 
             const dateString = new Date().toISOString().slice(2, 10).replace(/-/g, '');
             const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -99,8 +115,14 @@ export class BookingsService {
             return newBooking;
 
         } catch (error) {
-            await this.roomsService.updateMultipleRoomStatus(roomIds, RoomStatus.AVAILABLE);
+            if (isRoomsStatusChanged) {
+                await this.roomsService.updateMultipleRoomStatus(requestedRooms, RoomStatus.AVAILABLE);
+            }
             throw error;
+        } finally {
+            for (const key of acquiredLocks) {
+                await this.cacheService.releaseLock(key);
+            }
         }
     }
 
@@ -218,7 +240,7 @@ export class BookingsService {
             {
                 $set: {
                     status: payload.status,
-                    ...(payload.paymentStatus && { paymentStatus: payload.paymentStatus }), // Cập nhật nếu có truyền
+                    ...(payload.paymentStatus && { paymentStatus: payload.paymentStatus }),
                     ...(payload.note && { note: payload.note }),
                     updatedBy: admin.userId,
                 }
@@ -287,8 +309,17 @@ export class BookingsService {
             {
                 jobId: `invoice_${updatedBooking._id.toString()}`,
                 attempts: 3,
-                backoff: 5000,
-                removeOnComplete: true
+                backoff: {
+                    type: 'exponential',
+                    delay: 5000,
+                },
+                removeOnComplete: {
+                    age: 3600,
+                    count: 100,
+                },
+                removeOnFail: {
+                    age: 24 * 3600,
+                }
             }
         );
 

@@ -137,7 +137,7 @@ export class VnpayService {
                             { bookingId: booking._id.toString() },
                             {
                                 jobId: `invoice_${booking._id.toString()}`,
-                                removeOnComplete: true,
+                                removeOnComplete: { count: 100 },
                                 attempts: 3,
                                 backoff: 5000,
                             }
