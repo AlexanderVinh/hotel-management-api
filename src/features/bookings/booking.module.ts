@@ -8,6 +8,7 @@ import { MailModule } from 'src/shared/mail/mail.module';
 import { InvoiceModule } from 'src/shared/invoice/invoice.module';
 import { BullModule } from '@nestjs/bull';
 import { InvoiceProcessor } from './invoice.processor';
+import { CacheService } from 'src/shared/cache/cache.service';
 
 @Module({
     imports: [
@@ -17,7 +18,7 @@ import { InvoiceProcessor } from './invoice.processor';
         InvoiceModule,
     ],
     controllers: [BookingsController],
-    providers: [BookingsService, InvoiceProcessor],
+    providers: [BookingsService, InvoiceProcessor, CacheService],
     exports: [BookingsService],
 })
 export class BookingsModule { }

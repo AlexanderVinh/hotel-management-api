@@ -27,4 +27,13 @@ export class CacheService {
         const exists = await this.redis.exists(key);
         return exists === 1;
     }
+
+    async acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
+        const result = await this.redis.set(key, 'LOCKED', 'EX', ttlSeconds, 'NX');
+        return result === 'OK';
+    }
+
+    async releaseLock(key: string): Promise<void> {
+        await this.redis.del(key);
+    }
 }
